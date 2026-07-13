@@ -10,6 +10,7 @@ function toCaptionDto(c: {
   finalText: string;
   speaker: string | null;
   style: string | null;
+  outputKind?: string | null;
   version: number;
   isUsed: boolean;
   createdAt: Date;
@@ -23,6 +24,7 @@ function toCaptionDto(c: {
     finalText: c.finalText,
     speaker: c.speaker,
     style: c.style,
+    outputKind: (c.outputKind as GeneratedCaption["outputKind"]) ?? "x_captions",
     version: c.version,
     isUsed: c.isUsed,
     createdAt: c.createdAt.toISOString(),

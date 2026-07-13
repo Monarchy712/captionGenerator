@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { CaptionStyle } from "@caption-studio/shared";
+import type { CaptionStyle, OutputKind } from "@caption-studio/shared";
 import { ClaudeService } from "../services/ClaudeService";
 import { FeedbackService } from "../services/FeedbackService";
 import {
@@ -50,6 +50,7 @@ export class GenerateController {
       style: body.style as CaptionStyle,
       count: body.count,
       previewOnly: body.previewOnly,
+      outputKind: body.outputKind as OutputKind,
     });
     res.json(result);
   }
@@ -61,6 +62,7 @@ export class GenerateController {
       speaker: body.speaker,
       style: body.style as CaptionStyle,
       count: body.count,
+      outputKind: body.outputKind as OutputKind,
     });
     res.json({ promptPreview: built.prompt, parts: built.parts });
   }
@@ -74,6 +76,7 @@ export class GenerateController {
       currentCaptions: body.currentCaptions,
       iterationNotes: body.iterationNotes,
       count: body.count,
+      outputKind: body.outputKind as OutputKind,
     });
     res.json(result);
   }

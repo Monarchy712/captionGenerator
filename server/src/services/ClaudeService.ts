@@ -1,8 +1,38 @@
-import type { CaptionStyle } from "@caption-studio/shared";
+import type { CaptionStyle, OutputKind } from "@caption-studio/shared";
 import { createAIProvider, type AIProvider } from "../providers";
 import { CaptionRepository, TranscriptRepository } from "../repositories";
 import { PromptBuilder } from "./prompt/PromptBuilder";
 import { AppError } from "../utils/helpers";
+
+function mapCaption(c: {
+  id: string;
+  transcriptId: string;
+  originalText: string;
+  editedText: string | null;
+  finalText: string;
+  speaker: string | null;
+  style: string | null;
+  outputKind?: string | null;
+  version: number;
+  isUsed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: c.id,
+    transcriptId: c.transcriptId,
+    originalText: c.originalText,
+    editedText: c.editedText,
+    finalText: c.finalText,
+    speaker: c.speaker,
+    style: c.style,
+    outputKind: (c.outputKind as OutputKind) ?? "x_captions",
+    version: c.version,
+    isUsed: c.isUsed,
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+  };
+}
 
 export class ClaudeService {
   constructor(
@@ -18,13 +48,16 @@ export class ClaudeService {
     style: CaptionStyle;
     count?: number;
     previewOnly?: boolean;
+    outputKind?: OutputKind;
   }) {
     const count = input.count ?? 5;
+    const outputKind = input.outputKind ?? "x_captions";
     const { prompt, parts } = await this.promptBuilder.build({
       transcript: input.transcript,
       speaker: input.speaker,
       style: input.style,
       count,
+      outputKind,
     });
 
     if (input.previewOnly) {
@@ -53,24 +86,13 @@ export class ClaudeService {
         originalText: text,
         speaker: input.speaker,
         style: input.style,
+        outputKind,
       }))
     );
 
     return {
       transcriptId: transcript.id,
-      captions: captions.map((c) => ({
-        id: c.id,
-        transcriptId: c.transcriptId,
-        originalText: c.originalText,
-        editedText: c.editedText,
-        finalText: c.finalText,
-        speaker: c.speaker,
-        style: c.style,
-        version: c.version,
-        isUsed: c.isUsed,
-        createdAt: c.createdAt.toISOString(),
-        updatedAt: c.updatedAt.toISOString(),
-      })),
+      captions: captions.map(mapCaption),
       promptPreview: prompt,
       parts,
     };
@@ -83,18 +105,21 @@ export class ClaudeService {
     currentCaptions: string[];
     iterationNotes: string;
     count?: number;
+    outputKind?: OutputKind;
   }) {
     const notes = input.iterationNotes.trim();
     const current = input.currentCaptions.map((c) => c.trim()).filter(Boolean);
     if (!notes) throw new AppError(400, "Iteration notes are required");
     if (current.length === 0) throw new AppError(400, "Current captions are required");
 
+    const outputKind = input.outputKind ?? "x_captions";
     const count = input.count ?? current.length;
     const { prompt, parts } = await this.promptBuilder.build({
       transcript: input.transcript,
       speaker: input.speaker,
       style: input.style,
       count,
+      outputKind,
       currentCaptions: current,
       iterationNotes: notes,
     });
@@ -116,24 +141,13 @@ export class ClaudeService {
         originalText: text,
         speaker: input.speaker,
         style: input.style,
+        outputKind,
       }))
     );
 
     return {
       transcriptId: transcript.id,
-      captions: captions.map((c) => ({
-        id: c.id,
-        transcriptId: c.transcriptId,
-        originalText: c.originalText,
-        editedText: c.editedText,
-        finalText: c.finalText,
-        speaker: c.speaker,
-        style: c.style,
-        version: c.version,
-        isUsed: c.isUsed,
-        createdAt: c.createdAt.toISOString(),
-        updatedAt: c.updatedAt.toISOString(),
-      })),
+      captions: captions.map(mapCaption),
       promptPreview: prompt,
       parts,
     };
@@ -159,12 +173,12 @@ export class ClaudeService {
     return { caption: text, promptPreview: prompt };
   }
 
-  /** Build prompt without calling the model — for admin Prompt Preview. */
   async previewPrompt(input: {
     transcript: string;
     speaker: string;
     style: CaptionStyle;
     count?: number;
+    outputKind?: OutputKind;
   }) {
     return this.promptBuilder.build(input);
   }

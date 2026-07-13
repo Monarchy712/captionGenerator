@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CAPTION_STYLES } from "@caption-studio/shared";
+import { CAPTION_STYLES, OUTPUT_KINDS } from "@caption-studio/shared";
 
 export const generateSchema = z.object({
   transcript: z.string().min(1, "Transcript is required"),
@@ -7,6 +7,7 @@ export const generateSchema = z.object({
   style: z.enum(CAPTION_STYLES as [string, ...string[]]),
   count: z.number().int().min(1).max(10).optional().default(5),
   previewOnly: z.boolean().optional().default(false),
+  outputKind: z.enum(OUTPUT_KINDS as [string, ...string[]]).optional().default("x_captions"),
 });
 
 export const iterateSchema = z.object({
@@ -16,6 +17,7 @@ export const iterateSchema = z.object({
   currentCaptions: z.array(z.string().min(1)).min(1, "At least one current caption is required"),
   iterationNotes: z.string().min(1, "Iteration notes are required"),
   count: z.number().int().min(1).max(10).optional(),
+  outputKind: z.enum(OUTPUT_KINDS as [string, ...string[]]).optional().default("x_captions"),
 });
 
 export const feedbackSchema = z.object({

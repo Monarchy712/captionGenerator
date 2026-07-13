@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { ChevronDown, Eye, Loader2, RefreshCw, Wand2 } from "lucide-react";
+import { ChevronDown, Eye, Loader2 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
-import { CAPTION_STYLES, type CaptionStyle, type GeneratedCaption } from "@caption-studio/shared";
+import { CAPTION_STYLES, type CaptionStyle } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CaptionCard } from "@/components/captions/CaptionCard";
-import { useGenerate, useIterate, usePreviewPrompt } from "@/hooks/useCaptionApi";
+import { OutputSection } from "@/components/generate/OutputSection";
+import { usePreviewPrompt } from "@/hooks/useCaptionApi";
 import { ApiClientError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -21,17 +20,13 @@ interface FormValues {
 }
 
 export function GeneratePage() {
-  const generate = useGenerate();
-  const iterate = useIterate();
   const preview = usePreviewPrompt();
 
-  const [captions, setCaptions] = useState<GeneratedCaption[]>([]);
   const [promptPreview, setPromptPreview] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [iterationNotes, setIterationNotes] = useState("");
 
-  const { register, handleSubmit, control, watch, formState } = useForm<FormValues>({
+  const { register, control, watch, formState } = useForm<FormValues>({
     defaultValues: {
       transcript: "",
       speaker: "",
@@ -40,46 +35,7 @@ export function GeneratePage() {
   });
 
   const values = watch();
-  const busy = generate.isPending || iterate.isPending;
-
-  async function onGenerate(data: FormValues) {
-    setError(null);
-    try {
-      const result = await generate.mutateAsync({
-        transcript: data.transcript,
-        speaker: data.speaker.trim(),
-        style: data.style,
-        count: 5,
-      });
-      setCaptions(result.captions);
-      setIterationNotes("");
-      if (result.promptPreview) setPromptPreview(result.promptPreview);
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Generation failed");
-    }
-  }
-
-  async function onIterate() {
-    setError(null);
-    if (!iterationNotes.trim()) {
-      setError("Type an iteration note first — e.g. make hooks shorter, add more tension");
-      return;
-    }
-    try {
-      const result = await iterate.mutateAsync({
-        transcript: values.transcript,
-        speaker: values.speaker.trim(),
-        style: values.style,
-        currentCaptions: captions.map((c) => c.finalText),
-        iterationNotes: iterationNotes.trim(),
-        count: captions.length || 5,
-      });
-      setCaptions(result.captions);
-      if (result.promptPreview) setPromptPreview(result.promptPreview);
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Iteration failed");
-    }
-  }
+  const canSubmit = !!values.transcript?.trim() && !!values.speaker?.trim();
 
   async function onPreview() {
     setError(null);
@@ -90,6 +46,7 @@ export function GeneratePage() {
         style: values.style,
         count: 5,
         previewOnly: true,
+        outputKind: "x_captions",
       });
       setPromptPreview(result.promptPreview);
       setPreviewOpen(true);
@@ -97,12 +54,6 @@ export function GeneratePage() {
       setError(err instanceof ApiClientError ? err.message : "Preview failed");
     }
   }
-
-  function updateCaption(updated: GeneratedCaption) {
-    setCaptions((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-  }
-
-  const canSubmit = !!values.transcript?.trim() && !!values.speaker?.trim();
 
   return (
     <div className="space-y-8">
@@ -112,16 +63,15 @@ export function GeneratePage() {
           Caption Studio
         </h1>
         <p className="max-w-2xl text-muted-foreground">
-          Paste a transcript and the guest&apos;s name. The backend assembles rules and examples into
-          the prompt — then returns five captions that can mention the speaker.
+          One transcript feeds three outputs: X captions, Shorts titles, and Shorts captions.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onGenerate)} className="space-y-6">
+      <div className="space-y-6">
         <Card className="animate-fade-up" style={{ animationDelay: "40ms" }}>
           <CardHeader>
             <CardTitle>Transcript</CardTitle>
-            <CardDescription>Paste the clip transcript. Do not craft prompts here.</CardDescription>
+            <CardDescription>Shared across all three generators below.</CardDescription>
           </CardHeader>
           <CardContent>
             <Textarea
@@ -140,7 +90,7 @@ export function GeneratePage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Speaker / guest</CardTitle>
-              <CardDescription>Type the guest&apos;s name — used for attribution in captions.</CardDescription>
+              <CardDescription>Used for attribution.</CardDescription>
             </CardHeader>
             <CardContent>
               <Input
@@ -187,20 +137,7 @@ export function GeneratePage() {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 animate-fade-up" style={{ animationDelay: "120ms" }}>
-          <Button type="submit" size="lg" disabled={busy || !canSubmit}>
-            {generate.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating…
-              </>
-            ) : (
-              <>
-                <Wand2 className="h-4 w-4" />
-                Generate captions
-              </>
-            )}
-          </Button>
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             type="button"
             variant="outline"
@@ -213,10 +150,10 @@ export function GeneratePage() {
             ) : (
               <Eye className="h-4 w-4" />
             )}
-            Prompt preview
+            Prompt preview (X Captions)
           </Button>
         </div>
-      </form>
+      </div>
 
       {(promptPreview || previewOpen) && (
         <Collapsible open={previewOpen} onOpenChange={setPreviewOpen}>
@@ -226,9 +163,7 @@ export function GeneratePage() {
                 <button type="button" className="flex w-full items-center justify-between text-left">
                   <div>
                     <CardTitle className="text-base">Assembled prompt</CardTitle>
-                    <CardDescription>
-                      Exact prompt the backend sends to the model — built from rules and examples.
-                    </CardDescription>
+                    <CardDescription>X Captions prompt preview.</CardDescription>
                   </div>
                   <ChevronDown
                     className={cn("h-4 w-4 shrink-0 transition-transform", previewOpen && "rotate-180")}
@@ -247,56 +182,32 @@ export function GeneratePage() {
         </Collapsible>
       )}
 
-      {captions.length > 0 && (
-        <section className="space-y-4">
-          <div>
-            <Label className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-              Generated captions
-            </Label>
-            <h2 className="font-display mt-1 text-2xl font-semibold">Pick, edit, and train</h2>
-          </div>
+      <OutputSection
+        kind="x_captions"
+        transcript={values.transcript}
+        speaker={values.speaker}
+        style={values.style}
+        canSubmit={canSubmit}
+        description="Full X / social captions using rules, principles, and good/bad examples."
+      />
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Iterate</CardTitle>
-              <CardDescription>
-                Tell the model what to change. It keeps the current captions as context and rewrites them.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Textarea
-                value={iterationNotes}
-                onChange={(e) => setIterationNotes(e.target.value)}
-                rows={3}
-                placeholder='e.g. "Make hooks sharper and under 12 words" · "Lead with the $500B stat" · "Less hype, more tension"'
-              />
-              <Button
-                type="button"
-                onClick={onIterate}
-                disabled={busy || !iterationNotes.trim() || !canSubmit}
-              >
-                {iterate.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Iterating…
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4" />
-                    Iterate captions
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+      <OutputSection
+        kind="shorts_title"
+        transcript={values.transcript}
+        speaker={values.speaker}
+        style={values.style}
+        canSubmit={canSubmit}
+        description="YouTube Shorts titles. Same template, principles, and rules — no examples, no word-count limits."
+      />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {captions.map((caption, i) => (
-              <CaptionCard key={caption.id} caption={caption} index={i} onUpdate={updateCaption} />
-            ))}
-          </div>
-        </section>
-      )}
+      <OutputSection
+        kind="shorts_caption"
+        transcript={values.transcript}
+        speaker={values.speaker}
+        style={values.style}
+        canSubmit={canSubmit}
+        description="YouTube Shorts captions. Same template, principles, and rules — no examples, no word-count limits."
+      />
     </div>
   );
 }

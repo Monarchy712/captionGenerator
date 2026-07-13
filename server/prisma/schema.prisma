@@ -111,6 +111,7 @@ model GeneratedCaption {
   finalText    String
   speaker      String?
   style        String?
+  outputKind   String           @default("x_captions") // x_captions | shorts_title | shorts_caption
   version      Int              @default(1)
   isUsed       Boolean          @default(false)
   createdAt    DateTime         @default(now())
@@ -120,6 +121,7 @@ model GeneratedCaption {
   versions     CaptionVersion[]
 
   @@index([transcriptId])
+  @@index([outputKind])
 }
 
 model CaptionVersion {

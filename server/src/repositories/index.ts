@@ -299,6 +299,7 @@ export class CaptionRepository {
       originalText: string;
       speaker?: string;
       style?: string;
+      outputKind?: string;
     }[]
   ) {
     const created = [];
@@ -310,6 +311,7 @@ export class CaptionRepository {
           finalText: item.originalText,
           speaker: item.speaker,
           style: item.style,
+          outputKind: item.outputKind ?? "x_captions",
           version: 1,
         },
       });
