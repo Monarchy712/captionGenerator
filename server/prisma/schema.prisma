@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -62,8 +62,8 @@ model GoodExample {
   transcript String
   caption    String
   category   String   @default("general")
-  tags       String   @default("[]") // JSON array stored as string for SQLite
-  speaker    String   @default("") // optional guest name metadata — not a profile link
+  tags       String   @default("[]")
+  speaker    String   @default("")
   style      String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
@@ -80,26 +80,26 @@ model BadExample {
 }
 
 model SpeakerProfile {
-  id              String   @id @default(cuid())
-  name            String   @unique
-  tone            String
-  founderStyle    String   @default("")
-  technicalDepth  String
-  audience        String
-  writingStyle    String
-  vocabulary      String
-  notes           String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String   @unique
+  tone           String
+  founderStyle   String   @default("")
+  technicalDepth String
+  audience       String
+  writingStyle   String
+  vocabulary     String
+  notes          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Transcript {
-  id        String              @id @default(cuid())
+  id        String             @id @default(cuid())
   content   String
   speaker   String?
   style     String?
-  createdAt DateTime            @default(now())
+  createdAt DateTime           @default(now())
   captions  GeneratedCaption[]
 }
 

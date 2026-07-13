@@ -14,7 +14,8 @@ export const config = {
   claudeModel: process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514",
   groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
   groqBaseUrl: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
-  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
-  databaseUrl: process.env.DATABASE_URL || "file:./dev.db",
+  corsOrigin: process.env.CORS_ORIGIN || "*",
+  databaseUrl: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/caption_studio",
   exampleTopN: parseInt(process.env.EXAMPLE_TOP_N || "5", 10),
+  nodeEnv: process.env.NODE_ENV || "development",
 } as const;
