@@ -63,20 +63,43 @@ export class RuleRepository {
 }
 
 export class WritingPrincipleRepository {
-  async findAll(activeOnly = false) {
+  async findAll(activeOnly = false, outputKind?: string) {
     return prisma.writingPrinciple.findMany({
-      where: activeOnly ? { isActive: true } : undefined,
+      where: {
+        ...(activeOnly ? { isActive: true } : {}),
+        ...(outputKind ? { outputKind } : {}),
+      },
       orderBy: { sortOrder: "asc" },
     });
   }
 
-  async create(data: { title: string; content: string; sortOrder?: number; isActive?: boolean }) {
-    return prisma.writingPrinciple.create({ data });
+  async create(data: {
+    title: string;
+    content: string;
+    outputKind?: string;
+    sortOrder?: number;
+    isActive?: boolean;
+  }) {
+    return prisma.writingPrinciple.create({
+      data: {
+        title: data.title,
+        content: data.content,
+        outputKind: data.outputKind ?? "x_captions",
+        sortOrder: data.sortOrder ?? 0,
+        isActive: data.isActive ?? true,
+      },
+    });
   }
 
   async update(
     id: string,
-    data: Partial<{ title: string; content: string; sortOrder: number; isActive: boolean }>
+    data: Partial<{
+      title: string;
+      content: string;
+      outputKind: string;
+      sortOrder: number;
+      isActive: boolean;
+    }>
   ) {
     return prisma.writingPrinciple.update({ where: { id }, data });
   }
@@ -87,19 +110,39 @@ export class WritingPrincipleRepository {
 }
 
 export class PromptTemplateRepository {
-  async findActive() {
+  async findActive(outputKind = "x_captions") {
     return prisma.promptTemplate.findFirst({
-      where: { isActive: true },
+      where: { isActive: true, outputKind },
       orderBy: { updatedAt: "desc" },
     });
   }
 
-  async findByName(name: string) {
-    return prisma.promptTemplate.findUnique({ where: { name } });
+  async findByOutputKind(outputKind: string) {
+    return prisma.promptTemplate.findUnique({ where: { outputKind } });
   }
 
   async findById(id: string) {
     return prisma.promptTemplate.findUnique({ where: { id } });
+  }
+
+  async ensure(outputKind: string, content: string) {
+    const existing = await this.findByOutputKind(outputKind);
+    if (existing) return existing;
+    return prisma.$transaction(async (tx) => {
+      const created = await tx.promptTemplate.create({
+        data: {
+          name: "default",
+          content,
+          outputKind,
+          version: 1,
+          isActive: true,
+        },
+      });
+      await tx.promptTemplateVersion.create({
+        data: { templateId: created.id, content, version: 1 },
+      });
+      return created;
+    });
   }
 
   async update(id: string, content: string) {
@@ -138,24 +181,29 @@ export class PromptTemplateRepository {
 }
 
 export class GoodExampleRepository {
-  async findAll(filters?: { style?: string; category?: string; activeOnly?: boolean }) {
+  async findAll(filters?: {
+    style?: string;
+    category?: string;
+    activeOnly?: boolean;
+    outputKind?: string;
+  }) {
     const rows = await prisma.goodExample.findMany({
       where: {
         isActive: filters?.activeOnly ? true : undefined,
         style: filters?.style,
         category: filters?.category,
+        outputKind: filters?.outputKind,
       },
       orderBy: { updatedAt: "desc" },
     });
     return rows.map((r) => ({ ...r, tags: parseJsonArray(r.tags) }));
   }
 
-  async findRelevant(opts: { style?: string; limit: number }) {
-    // Prefer matching style, then fall back to recent active examples.
-    // Guest name is optional metadata only — never used for retrieval.
+  async findRelevant(opts: { style?: string; limit: number; outputKind?: string }) {
+    const kind = opts.outputKind ?? "x_captions";
     const matched = opts.style
       ? await prisma.goodExample.findMany({
-          where: { isActive: true, style: opts.style },
+          where: { isActive: true, style: opts.style, outputKind: kind },
           orderBy: { updatedAt: "desc" },
           take: opts.limit,
         })
@@ -168,7 +216,7 @@ export class GoodExampleRepository {
     const remaining = opts.limit - matched.length;
     const ids = matched.map((m) => m.id);
     const fallback = await prisma.goodExample.findMany({
-      where: { isActive: true, id: { notIn: ids } },
+      where: { isActive: true, outputKind: kind, id: { notIn: ids } },
       orderBy: { updatedAt: "desc" },
       take: remaining,
     });
@@ -183,6 +231,7 @@ export class GoodExampleRepository {
     tags?: string[];
     speaker?: string;
     style?: string;
+    outputKind?: string;
     isActive?: boolean;
   }) {
     const row = await prisma.goodExample.create({
@@ -193,6 +242,7 @@ export class GoodExampleRepository {
         tags: toJsonArray(data.tags ?? []),
         speaker: data.speaker?.trim() || "",
         style: data.style,
+        outputKind: data.outputKind ?? "x_captions",
         isActive: data.isActive ?? true,
       },
     });
@@ -208,6 +258,7 @@ export class GoodExampleRepository {
       tags: string[];
       speaker: string;
       style: string | null;
+      outputKind: string;
       isActive: boolean;
     }>
   ) {
@@ -228,26 +279,44 @@ export class GoodExampleRepository {
 }
 
 export class BadExampleRepository {
-  async findAll(activeOnly = false) {
+  async findAll(activeOnly = false, outputKind?: string) {
     return prisma.badExample.findMany({
-      where: activeOnly ? { isActive: true } : undefined,
+      where: {
+        ...(activeOnly ? { isActive: true } : {}),
+        ...(outputKind ? { outputKind } : {}),
+      },
       orderBy: { updatedAt: "desc" },
     });
   }
 
-  async findTop(limit: number) {
+  async findTop(limit: number, outputKind = "x_captions") {
     return prisma.badExample.findMany({
-      where: { isActive: true },
+      where: { isActive: true, outputKind },
       orderBy: { updatedAt: "desc" },
       take: limit,
     });
   }
 
-  async create(data: { caption: string; reason: string; isActive?: boolean }) {
-    return prisma.badExample.create({ data });
+  async create(data: {
+    caption: string;
+    reason: string;
+    outputKind?: string;
+    isActive?: boolean;
+  }) {
+    return prisma.badExample.create({
+      data: {
+        caption: data.caption,
+        reason: data.reason,
+        outputKind: data.outputKind ?? "x_captions",
+        isActive: data.isActive ?? true,
+      },
+    });
   }
 
-  async update(id: string, data: Partial<{ caption: string; reason: string; isActive: boolean }>) {
+  async update(
+    id: string,
+    data: Partial<{ caption: string; reason: string; outputKind: string; isActive: boolean }>
+  ) {
     return prisma.badExample.update({ where: { id }, data });
   }
 

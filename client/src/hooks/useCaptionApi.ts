@@ -66,10 +66,11 @@ export function useReplaceRules() {
   });
 }
 
-export function useGoodExamples() {
+export function useGoodExamples(outputKind: OutputKind) {
   return useQuery({
-    queryKey: ["examples"],
-    queryFn: () => api.get<GoodExample[]>("/examples", true),
+    queryKey: ["examples", outputKind],
+    queryFn: () =>
+      api.get<GoodExample[]>(`/examples?outputKind=${encodeURIComponent(outputKind)}`, true),
   });
 }
 
@@ -77,7 +78,9 @@ export function useCreateGoodExample() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Partial<GoodExample>) => api.post<GoodExample>("/examples", body, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["examples"] }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["examples", vars.outputKind ?? "x_captions"] });
+    },
   });
 }
 
@@ -98,10 +101,11 @@ export function useDeleteGoodExample() {
   });
 }
 
-export function useBadExamples() {
+export function useBadExamples(outputKind: OutputKind) {
   return useQuery({
-    queryKey: ["bad-examples"],
-    queryFn: () => api.get<BadExample[]>("/bad-examples", true),
+    queryKey: ["bad-examples", outputKind],
+    queryFn: () =>
+      api.get<BadExample[]>(`/bad-examples?outputKind=${encodeURIComponent(outputKind)}`, true),
   });
 }
 
@@ -109,7 +113,9 @@ export function useCreateBadExample() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Partial<BadExample>) => api.post<BadExample>("/bad-examples", body, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["bad-examples"] }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["bad-examples", vars.outputKind ?? "x_captions"] });
+    },
   });
 }
 
@@ -130,10 +136,14 @@ export function useDeleteBadExample() {
   });
 }
 
-export function usePrinciples() {
+export function usePrinciples(outputKind: OutputKind) {
   return useQuery({
-    queryKey: ["principles"],
-    queryFn: () => api.get<WritingPrinciple[]>("/principles", true),
+    queryKey: ["principles", outputKind],
+    queryFn: () =>
+      api.get<WritingPrinciple[]>(
+        `/principles?outputKind=${encodeURIComponent(outputKind)}`,
+        true
+      ),
   });
 }
 
@@ -142,7 +152,9 @@ export function useCreatePrinciple() {
   return useMutation({
     mutationFn: (body: Partial<WritingPrinciple>) =>
       api.post<WritingPrinciple>("/principles", body, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["principles"] }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["principles", vars.outputKind ?? "x_captions"] });
+    },
   });
 }
 
@@ -163,36 +175,44 @@ export function useDeletePrinciple() {
   });
 }
 
-export function usePromptTemplate() {
+export function usePromptTemplate(outputKind: OutputKind) {
   return useQuery({
-    queryKey: ["prompt-template"],
+    queryKey: ["prompt-template", outputKind],
     queryFn: () =>
-      api.get<PromptTemplate & { versions: { id: string; version: number; content: string; createdAt: string }[] }>(
-        "/prompt-template",
-        true
-      ),
+      api.get<
+        PromptTemplate & {
+          versions: { id: string; version: number; content: string; createdAt: string }[];
+        }
+      >(`/prompt-template?outputKind=${encodeURIComponent(outputKind)}`, true),
   });
 }
 
 export function useUpdatePromptTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (content: string) => api.put("/prompt-template", { content }, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["prompt-template"] }),
+    mutationFn: (body: { content: string; outputKind: OutputKind }) =>
+      api.put("/prompt-template", body, true),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["prompt-template", vars.outputKind] });
+    },
   });
 }
 
 export function useRevertPromptTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (version: number) => api.post("/prompt-template/revert", { version }, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["prompt-template"] }),
+    mutationFn: (body: { version: number; outputKind: OutputKind }) =>
+      api.post("/prompt-template/revert", body, true),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["prompt-template", vars.outputKind] });
+    },
   });
 }
 
 export function useLogin() {
   return useMutation({
-    mutationFn: (password: string) => api.post<{ ok: boolean; token: string }>("/auth/login", { password }),
+    mutationFn: (password: string) =>
+      api.post<{ ok: boolean; token: string }>("/auth/login", { password }),
   });
 }
 

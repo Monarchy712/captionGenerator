@@ -29,24 +29,28 @@ model Rule {
 }
 
 model WritingPrinciple {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  isActive  Boolean  @default(true)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  title      String
+  content    String
+  outputKind String   @default("x_captions")
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([outputKind])
 }
 
 model PromptTemplate {
-  id        String                  @id @default(cuid())
-  name      String                  @unique
-  content   String
-  version   Int                     @default(1)
-  isActive  Boolean                 @default(true)
-  createdAt DateTime                @default(now())
-  updatedAt DateTime                @updatedAt
-  versions  PromptTemplateVersion[]
+  id         String                  @id @default(cuid())
+  name       String                  @default("default")
+  content    String
+  outputKind String                  @unique // one template per output kind
+  version    Int                     @default(1)
+  isActive   Boolean                 @default(true)
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+  versions   PromptTemplateVersion[]
 }
 
 model PromptTemplateVersion {
@@ -68,18 +72,24 @@ model GoodExample {
   tags       String   @default("[]")
   speaker    String   @default("")
   style      String?
+  outputKind String   @default("x_captions")
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([outputKind])
 }
 
 model BadExample {
-  id        String   @id @default(cuid())
-  caption   String
-  reason    String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  caption    String
+  reason     String
+  outputKind String   @default("x_captions")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([outputKind])
 }
 
 model SpeakerProfile {

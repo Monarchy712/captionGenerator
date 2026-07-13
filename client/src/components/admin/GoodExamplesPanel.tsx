@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
+import type { OutputKind } from "@caption-studio/shared";
+import { OUTPUT_KIND_LABELS } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,8 +14,8 @@ import {
 } from "@/hooks/useCaptionApi";
 import { ErrorBox, Loading } from "./RulesPanel";
 
-export function GoodExamplesPanel() {
-  const { data, isLoading, error } = useGoodExamples();
+export function GoodExamplesPanel({ outputKind }: { outputKind: OutputKind }) {
+  const { data, isLoading, error } = useGoodExamples(outputKind);
   const create = useCreateGoodExample();
   const remove = useDeleteGoodExample();
   const [open, setOpen] = useState(false);
@@ -29,15 +31,16 @@ export function GoodExamplesPanel() {
   if (isLoading) return <Loading />;
   if (error) return <ErrorBox message="Failed to load good examples" />;
 
+  const label = OUTPUT_KIND_LABELS[outputKind];
+
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
-            <CardTitle>Good examples</CardTitle>
+            <CardTitle>{label} — good examples</CardTitle>
             <CardDescription>
-              Winning transcript → caption pairs. Guest name is optional metadata only — examples
-              are matched by style, not by speaker.
+              Winning transcript → caption pairs for this output type only.
             </CardDescription>
           </div>
           <Button size="sm" variant="outline" onClick={() => setOpen(!open)}>
@@ -52,7 +55,10 @@ export function GoodExamplesPanel() {
                 <Input value={form.style} onChange={(e) => setForm({ ...form, style: e.target.value })} />
               </Field>
               <Field label="Category">
-                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                <Input
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                />
               </Field>
               <Field label="Tags (comma-separated)">
                 <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
@@ -84,12 +90,20 @@ export function GoodExamplesPanel() {
               onClick={async () => {
                 await create.mutateAsync({
                   ...form,
+                  outputKind,
                   tags: form.tags
                     .split(",")
                     .map((t) => t.trim())
                     .filter(Boolean),
                 });
-                setForm({ transcript: "", caption: "", category: "general", tags: "", speaker: "", style: "Viral" });
+                setForm({
+                  transcript: "",
+                  caption: "",
+                  category: "general",
+                  tags: "",
+                  speaker: "",
+                  style: "Viral",
+                });
                 setOpen(false);
               }}
             >
@@ -131,6 +145,9 @@ export function GoodExamplesPanel() {
             </CardContent>
           </Card>
         ))}
+        {(data ?? []).length === 0 && (
+          <p className="text-sm text-muted-foreground">No good examples for {label} yet.</p>
+        )}
       </div>
     </div>
   );

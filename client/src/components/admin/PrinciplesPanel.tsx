@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
+import type { OutputKind } from "@caption-studio/shared";
+import { OUTPUT_KIND_LABELS } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,8 +15,8 @@ import {
 } from "@/hooks/useCaptionApi";
 import { ErrorBox, Loading } from "./RulesPanel";
 
-export function PrinciplesPanel() {
-  const { data, isLoading, error } = usePrinciples();
+export function PrinciplesPanel({ outputKind }: { outputKind: OutputKind }) {
+  const { data, isLoading, error } = usePrinciples(outputKind);
   const create = useCreatePrinciple();
   const update = useUpdatePrinciple();
   const remove = useDeletePrinciple();
@@ -25,13 +27,15 @@ export function PrinciplesPanel() {
   if (isLoading) return <Loading />;
   if (error) return <ErrorBox message="Failed to load principles" />;
 
+  const label = OUTPUT_KIND_LABELS[outputKind];
+
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
-            <CardTitle>Writing principles</CardTitle>
-            <CardDescription>Markdown-friendly guidance for caption craft.</CardDescription>
+            <CardTitle>{label} — writing principles</CardTitle>
+            <CardDescription>Guidance scoped to this output type only.</CardDescription>
           </div>
           <Button size="sm" variant="outline" onClick={() => setCreating(!creating)}>
             <Plus className="h-3.5 w-3.5" />
@@ -59,7 +63,7 @@ export function PrinciplesPanel() {
             <Button
               disabled={create.isPending || !draft.title || !draft.content}
               onClick={async () => {
-                await create.mutateAsync(draft);
+                await create.mutateAsync({ ...draft, outputKind });
                 setDraft({ title: "", content: "" });
                 setCreating(false);
               }}
@@ -129,6 +133,9 @@ export function PrinciplesPanel() {
           </CardContent>
         </Card>
       ))}
+      {(data ?? []).length === 0 && (
+        <p className="text-sm text-muted-foreground">No principles for {label} yet.</p>
+      )}
     </div>
   );
 }

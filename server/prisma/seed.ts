@@ -154,18 +154,20 @@ async function main() {
         content: p.content,
         sortOrder: i,
         isActive: true,
+        outputKind: "x_captions",
       })),
     });
   }
 
   // Speaker profiles removed — guests are free-text names entered per generation.
 
-  let template = await prisma.promptTemplate.findUnique({ where: { name: "default" } });
+  let template = await prisma.promptTemplate.findUnique({ where: { outputKind: "x_captions" } });
   if (!template) {
     template = await prisma.promptTemplate.create({
       data: {
         name: "default",
         content: DEFAULT_TEMPLATE,
+        outputKind: "x_captions",
         version: 1,
         isActive: true,
       },
@@ -184,16 +186,57 @@ async function main() {
     });
   }
 
-  const goodCount = await prisma.goodExample.count();
+  const goodCount = await prisma.goodExample.count({ where: { outputKind: "x_captions" } });
   if (goodCount === 0) {
     const { FRESH_GOOD_EXAMPLES } = await import("./good-examples-data");
-    await prisma.goodExample.createMany({ data: FRESH_GOOD_EXAMPLES });
+    await prisma.goodExample.createMany({
+      data: FRESH_GOOD_EXAMPLES.map((ex) => ({ ...ex, outputKind: "x_captions" })),
+    });
   }
 
-  const badCount = await prisma.badExample.count();
+  const badCount = await prisma.badExample.count({ where: { outputKind: "x_captions" } });
   if (badCount === 0) {
     const { FRESH_BAD_EXAMPLES } = await import("./bad-examples-data");
-    await prisma.badExample.createMany({ data: FRESH_BAD_EXAMPLES });
+    await prisma.badExample.createMany({
+      data: FRESH_BAD_EXAMPLES.map((ex) => ({ ...ex, outputKind: "x_captions" })),
+    });
+  }
+
+  // Bootstrap Shorts principles + templates (examples intentionally empty).
+  for (const kind of ["shorts_title", "shorts_caption"] as const) {
+    const pCount = await prisma.writingPrinciple.count({ where: { outputKind: kind } });
+    if (pCount === 0) {
+      const source = await prisma.writingPrinciple.findMany({
+        where: { outputKind: "x_captions" },
+        orderBy: { sortOrder: "asc" },
+      });
+      if (source.length > 0) {
+        await prisma.writingPrinciple.createMany({
+          data: source.map((p, i) => ({
+            title: p.title,
+            content: p.content,
+            sortOrder: i,
+            isActive: true,
+            outputKind: kind,
+          })),
+        });
+      }
+    }
+    const t = await prisma.promptTemplate.findUnique({ where: { outputKind: kind } });
+    if (!t && template) {
+      const created = await prisma.promptTemplate.create({
+        data: {
+          name: "default",
+          content: template.content,
+          outputKind: kind,
+          version: 1,
+          isActive: true,
+        },
+      });
+      await prisma.promptTemplateVersion.create({
+        data: { templateId: created.id, content: template.content, version: 1 },
+      });
+    }
   }
 
   console.log("Seed complete.");

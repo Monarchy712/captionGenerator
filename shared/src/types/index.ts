@@ -44,6 +44,7 @@ export interface WritingPrinciple {
   id: string;
   title: string;
   content: string;
+  outputKind: OutputKind;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -54,6 +55,7 @@ export interface PromptTemplate {
   id: string;
   name: string;
   content: string;
+  outputKind: OutputKind;
   version: number;
   isActive: boolean;
   createdAt: string;
@@ -76,6 +78,7 @@ export interface GoodExample {
   tags: string[];
   speaker?: string | null;
   style?: string | null;
+  outputKind: OutputKind;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -85,6 +88,7 @@ export interface BadExample {
   id: string;
   caption: string;
   reason: string;
+  outputKind: OutputKind;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

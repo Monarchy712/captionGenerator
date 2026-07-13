@@ -34,12 +34,14 @@ export const goodExampleSchema = z.object({
   tags: z.array(z.string()).optional(),
   speaker: z.string().optional().default(""),
   style: z.string().optional().nullable(),
+  outputKind: z.enum(OUTPUT_KINDS as [string, ...string[]]).optional().default("x_captions"),
   isActive: z.boolean().optional(),
 });
 
 export const badExampleSchema = z.object({
   caption: z.string().min(1),
   reason: z.string().min(1),
+  outputKind: z.enum(OUTPUT_KINDS as [string, ...string[]]).optional().default("x_captions"),
   isActive: z.boolean().optional(),
 });
 
@@ -57,6 +59,7 @@ export const rulesReplaceSchema = z.object({
 export const principleSchema = z.object({
   title: z.string().min(1),
   content: z.string().min(1),
+  outputKind: z.enum(OUTPUT_KINDS as [string, ...string[]]).optional().default("x_captions"),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
 });
@@ -75,8 +78,10 @@ export const speakerSchema = z.object({
 
 export const promptTemplateUpdateSchema = z.object({
   content: z.string().min(1),
+  outputKind: z.enum(OUTPUT_KINDS as [string, ...string[]]).optional().default("x_captions"),
 });
 
 export const promptRevertSchema = z.object({
   version: z.number().int().min(1),
+  outputKind: z.enum(OUTPUT_KINDS as [string, ...string[]]).optional().default("x_captions"),
 });

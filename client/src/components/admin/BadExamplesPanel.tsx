@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
+import type { OutputKind } from "@caption-studio/shared";
+import { OUTPUT_KIND_LABELS } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -11,8 +13,8 @@ import {
 } from "@/hooks/useCaptionApi";
 import { ErrorBox, Loading } from "./RulesPanel";
 
-export function BadExamplesPanel() {
-  const { data, isLoading, error } = useBadExamples();
+export function BadExamplesPanel({ outputKind }: { outputKind: OutputKind }) {
+  const { data, isLoading, error } = useBadExamples(outputKind);
   const create = useCreateBadExample();
   const remove = useDeleteBadExample();
   const [open, setOpen] = useState(false);
@@ -21,13 +23,15 @@ export function BadExamplesPanel() {
   if (isLoading) return <Loading />;
   if (error) return <ErrorBox message="Failed to load bad examples" />;
 
+  const label = OUTPUT_KIND_LABELS[outputKind];
+
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
-            <CardTitle>Bad examples</CardTitle>
-            <CardDescription>Anti-patterns the model must avoid — with reasons.</CardDescription>
+            <CardTitle>{label} — bad examples</CardTitle>
+            <CardDescription>Anti-patterns for this output type only — with reasons.</CardDescription>
           </div>
           <Button size="sm" variant="outline" onClick={() => setOpen(!open)}>
             <Plus className="h-3.5 w-3.5" />
@@ -55,7 +59,7 @@ export function BadExamplesPanel() {
             <Button
               disabled={create.isPending || !form.caption || !form.reason}
               onClick={async () => {
-                await create.mutateAsync(form);
+                await create.mutateAsync({ ...form, outputKind });
                 setForm({ caption: "", reason: "" });
                 setOpen(false);
               }}
@@ -85,6 +89,9 @@ export function BadExamplesPanel() {
             </CardContent>
           </Card>
         ))}
+        {(data ?? []).length === 0 && (
+          <p className="text-sm text-muted-foreground">No bad examples for {label} yet.</p>
+        )}
       </div>
     </div>
   );

@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import type { OutputKind } from "@caption-studio/shared";
-import { OUTPUT_KIND_LABELS, OUTPUT_KINDS } from "@caption-studio/shared";
+import { OUTPUT_KIND_LABELS } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useReplaceRules, useRules } from "@/hooks/useCaptionApi";
 
-function RuleKindEditor({ kind }: { kind: OutputKind }) {
-  const { data, isLoading, error } = useRules(kind);
+export function RulesPanel({ outputKind }: { outputKind: OutputKind }) {
+  const { data, isLoading, error } = useRules(outputKind);
   const replace = useReplaceRules();
   const [lines, setLines] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
@@ -19,7 +19,7 @@ function RuleKindEditor({ kind }: { kind: OutputKind }) {
 
   async function save() {
     await replace.mutateAsync({
-      outputKind: kind,
+      outputKind,
       rules: lines
         .filter((l) => l.trim())
         .map((content, i) => ({ content: content.trim(), sortOrder: i, isActive: true })),
@@ -28,7 +28,7 @@ function RuleKindEditor({ kind }: { kind: OutputKind }) {
     setTimeout(() => setSaved(false), 2000);
   }
 
-  const label = OUTPUT_KIND_LABELS[kind];
+  const label = OUTPUT_KIND_LABELS[outputKind];
 
   if (isLoading) return <Loading />;
   if (error) return <ErrorBox message={`Failed to load ${label} rules`} />;
@@ -38,8 +38,7 @@ function RuleKindEditor({ kind }: { kind: OutputKind }) {
       <CardHeader>
         <CardTitle>{label} rules</CardTitle>
         <CardDescription>
-          Hard constraints injected only when generating {label.toLowerCase()}. Edit these
-          independently of the other generators.
+          Hard constraints for {label.toLowerCase()} only. Other output types keep their own lists.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -73,25 +72,11 @@ function RuleKindEditor({ kind }: { kind: OutputKind }) {
           </Button>
           <Button type="button" size="sm" onClick={save} disabled={replace.isPending}>
             {replace.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-            {saved ? "Saved" : `Save ${label} rules`}
+            {saved ? "Saved" : "Save rules"}
           </Button>
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-export function RulesPanel() {
-  return (
-    <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Each generator has its own rule set. X Captions, Shorts Title, and Shorts Caption do not
-        share rules — edit them separately below.
-      </p>
-      {OUTPUT_KINDS.map((kind) => (
-        <RuleKindEditor key={kind} kind={kind} />
-      ))}
-    </div>
   );
 }
 

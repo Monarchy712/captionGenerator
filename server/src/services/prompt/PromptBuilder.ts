@@ -1,5 +1,5 @@
 /**
- * PromptBuilder — assembles the full prompt from DB context.
+ * PromptBuilder — assembles the full prompt from DB context scoped by outputKind.
  * Speaker is a free-text guest name only (no predefined profiles).
  */
 
@@ -23,7 +23,6 @@ export interface PromptBuilderInput {
   style: CaptionStyle;
   count?: number;
   outputKind?: OutputKind;
-  /** When set, model refines these captions instead of generating from scratch. */
   currentCaptions?: string[];
   iterationNotes?: string;
 }
@@ -103,25 +102,23 @@ export class PromptBuilder {
     const transcript = input.transcript.trim();
     const speaker = input.speaker.trim();
     const outputKind: OutputKind = input.outputKind ?? "x_captions";
-    const isShorts = outputKind === "shorts_title" || outputKind === "shorts_caption";
 
     if (!transcript) throw new AppError(400, "Transcript is required");
     if (!speaker) throw new AppError(400, "Speaker name is required");
 
     const [rules, principles, template, examples] = await Promise.all([
       this.rulesRepo.findAll(true, outputKind),
-      this.principlesRepo.findAll(true),
-      this.templatesRepo.findActive(),
-      isShorts
-        ? Promise.resolve({ good: [], bad: [] })
-        : this.retriever.retrieve({
-            transcript,
-            style: input.style,
-          }),
+      this.principlesRepo.findAll(true, outputKind),
+      this.templatesRepo.findActive(outputKind),
+      this.retriever.retrieve({
+        transcript,
+        style: input.style,
+        outputKind,
+      }),
     ]);
 
     if (!template) {
-      throw new AppError(500, "No active prompt template configured");
+      throw new AppError(500, `No active prompt template configured for ${outputKind}`);
     }
 
     const rulesText =
@@ -145,6 +142,7 @@ export class PromptBuilder {
       tags: ex.tags,
       speaker: ex.speaker,
       style: ex.style,
+      outputKind: (ex.outputKind as OutputKind) ?? outputKind,
       isActive: ex.isActive,
       createdAt: ex.createdAt.toISOString(),
       updatedAt: ex.updatedAt.toISOString(),
@@ -154,6 +152,7 @@ export class PromptBuilder {
       id: ex.id,
       caption: ex.caption,
       reason: ex.reason,
+      outputKind: (ex.outputKind as OutputKind) ?? outputKind,
       isActive: ex.isActive,
       createdAt: ex.createdAt.toISOString(),
       updatedAt: ex.updatedAt.toISOString(),
@@ -196,30 +195,18 @@ Keep what already works. Change what the editor asked for.
 Produce ${count} improved outputs.`
       : "";
 
-    const examplesNote = isShorts
-      ? `
-
-## EXAMPLES
-No good/bad examples are injected for Shorts Title / Shorts Caption. Rely on rules + principles + transcript.`
-      : "";
-
     const prompt =
       applyTemplate(template.content, {
         count: String(count),
         rules: rulesText,
         principles: principlesText,
         speaker_profile: formatSpeakerContext(speaker),
-        good_examples: isShorts
-          ? "(Intentionally empty for Shorts — do not invent examples.)"
-          : formatGoodExamples(goodExamples),
-        bad_examples: isShorts
-          ? "(Intentionally empty for Shorts — do not invent anti-examples.)"
-          : formatBadExamples(badExamples),
+        good_examples: formatGoodExamples(goodExamples),
+        bad_examples: formatBadExamples(badExamples),
         style: input.style,
         speaker,
         transcript,
       }) +
-      examplesNote +
       iterationBlock +
       modeInstructions(outputKind, count);
 

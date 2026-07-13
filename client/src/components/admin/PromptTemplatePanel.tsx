@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { History, Loader2 } from "lucide-react";
+import type { OutputKind } from "@caption-studio/shared";
+import { OUTPUT_KIND_LABELS } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,8 +12,8 @@ import {
 } from "@/hooks/useCaptionApi";
 import { ErrorBox, Loading } from "./RulesPanel";
 
-export function PromptTemplatePanel() {
-  const { data, isLoading, error } = usePromptTemplate();
+export function PromptTemplatePanel({ outputKind }: { outputKind: OutputKind }) {
+  const { data, isLoading, error } = usePromptTemplate(outputKind);
   const update = useUpdatePromptTemplate();
   const revert = useRevertPromptTemplate();
   const [content, setContent] = useState("");
@@ -19,31 +21,33 @@ export function PromptTemplatePanel() {
 
   useEffect(() => {
     if (data) setContent(data.content);
+    else setContent("");
   }, [data]);
 
   if (isLoading) return <Loading />;
   if (error) return <ErrorBox message="Failed to load prompt template" />;
 
+  const label = OUTPUT_KIND_LABELS[outputKind];
+
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Prompt template</CardTitle>
+          <CardTitle>{label} — prompt template</CardTitle>
           <CardDescription>
             Placeholders:{" "}
             <code className="text-primary">
               {"{{rules}} {{principles}} {{speaker_profile}} {{good_examples}} {{bad_examples}} {{transcript}} {{speaker}} {{style}} {{count}}"}
             </code>
-            . <code className="text-muted-foreground">{"{{speaker}}"}</code> is the free-text guest name from the generate form.{" "}
-            <code className="text-muted-foreground">{"{{speaker_profile}}"}</code> injects attribution instructions for that name. Saving creates a new version.
+            . Saving creates a new version for this output type only.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              Active version <span className="font-mono text-primary">v{data?.version}</span>
+              Active version <span className="font-mono text-primary">v{data?.version ?? 1}</span>
             </span>
-            <span className="font-mono">{data?.name}</span>
+            <span className="font-mono">{label}</span>
           </div>
           <Textarea
             className="min-h-[360px] font-mono text-xs leading-relaxed"
@@ -53,7 +57,7 @@ export function PromptTemplatePanel() {
           <Button
             disabled={update.isPending || !content.trim()}
             onClick={async () => {
-              await update.mutateAsync(content);
+              await update.mutateAsync({ content, outputKind });
               setSaved(true);
               setTimeout(() => setSaved(false), 2000);
             }}
@@ -70,7 +74,7 @@ export function PromptTemplatePanel() {
             <History className="h-4 w-4" />
             Version history
           </CardTitle>
-          <CardDescription>Revert to any previous template snapshot.</CardDescription>
+          <CardDescription>Revert to any previous template snapshot for {label}.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {(data?.versions ?? []).map((v) => (
@@ -93,7 +97,7 @@ export function PromptTemplatePanel() {
                 size="sm"
                 variant="outline"
                 disabled={revert.isPending || v.version === data?.version}
-                onClick={() => revert.mutate(v.version)}
+                onClick={() => revert.mutate({ version: v.version, outputKind })}
               >
                 Revert
               </Button>

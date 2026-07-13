@@ -95,6 +95,7 @@ export class ExamplesController {
     const examples = await goodExampleRepo.findAll({
       style: req.query.style as string | undefined,
       category: req.query.category as string | undefined,
+      outputKind: typeof req.query.outputKind === "string" ? req.query.outputKind : undefined,
     });
     res.json(examples);
   }
@@ -104,6 +105,7 @@ export class ExamplesController {
     const example = await goodExampleRepo.create({
       ...body,
       style: body.style ?? undefined,
+      outputKind: body.outputKind,
     });
     res.status(201).json(example);
   }
@@ -119,8 +121,9 @@ export class ExamplesController {
     res.status(204).send();
   }
 
-  static async listBad(_req: Request, res: Response) {
-    const examples = await badExampleRepo.findAll();
+  static async listBad(req: Request, res: Response) {
+    const kind = typeof req.query.outputKind === "string" ? req.query.outputKind : undefined;
+    const examples = await badExampleRepo.findAll(false, kind);
     res.json(examples);
   }
 
@@ -189,8 +192,9 @@ function zString(value: unknown): string {
 }
 
 export class PrinciplesController {
-  static async list(_req: Request, res: Response) {
-    const principles = await principleRepo.findAll();
+  static async list(req: Request, res: Response) {
+    const kind = typeof req.query.outputKind === "string" ? req.query.outputKind : undefined;
+    const principles = await principleRepo.findAll(false, kind);
     res.json(principles);
   }
 
@@ -240,32 +244,44 @@ export class SpeakersController {
 }
 
 export class PromptTemplateController {
-  static async get(_req: Request, res: Response) {
-    const template = await templateRepo.findActive();
-    if (!template) throw new AppError(404, "No prompt template found");
+  static async get(req: Request, res: Response) {
+    const kind =
+      typeof req.query.outputKind === "string" && req.query.outputKind
+        ? req.query.outputKind
+        : "x_captions";
+    const template = await templateRepo.findActive(kind);
+    if (!template) throw new AppError(404, "No prompt template found for this output kind");
     const versions = await templateRepo.getVersions(template.id);
     res.json({ ...template, versions });
   }
 
   static async update(req: Request, res: Response) {
     const body = parseBody(promptTemplateUpdateSchema, req.body);
-    const template = await templateRepo.findActive();
-    if (!template) throw new AppError(404, "No prompt template found");
+    const kind = body.outputKind ?? "x_captions";
+    let template = await templateRepo.findActive(kind);
+    if (!template) {
+      template = await templateRepo.ensure(kind, body.content);
+    }
     const updated = await templateRepo.update(template.id, body.content);
     res.json(updated);
   }
 
   static async revert(req: Request, res: Response) {
     const body = parseBody(promptRevertSchema, req.body);
-    const template = await templateRepo.findActive();
-    if (!template) throw new AppError(404, "No prompt template found");
+    const kind = body.outputKind ?? "x_captions";
+    const template = await templateRepo.findActive(kind);
+    if (!template) throw new AppError(404, "No prompt template found for this output kind");
     const updated = await templateRepo.revertToVersion(template.id, body.version);
     res.json(updated);
   }
 
-  static async versions(_req: Request, res: Response) {
-    const template = await templateRepo.findActive();
-    if (!template) throw new AppError(404, "No prompt template found");
+  static async versions(req: Request, res: Response) {
+    const kind =
+      typeof req.query.outputKind === "string" && req.query.outputKind
+        ? req.query.outputKind
+        : "x_captions";
+    const template = await templateRepo.findActive(kind);
+    if (!template) throw new AppError(404, "No prompt template found for this output kind");
     const versions = await templateRepo.getVersions(template.id);
     res.json(versions);
   }

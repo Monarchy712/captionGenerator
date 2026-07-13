@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Lock, LogOut, Loader2 } from "lucide-react";
+import type { OutputKind } from "@caption-studio/shared";
+import { OUTPUT_KIND_LABELS, OUTPUT_KINDS } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,11 +13,13 @@ import { GoodExamplesPanel } from "@/components/admin/GoodExamplesPanel";
 import { BadExamplesPanel } from "@/components/admin/BadExamplesPanel";
 import { PrinciplesPanel } from "@/components/admin/PrinciplesPanel";
 import { PromptTemplatePanel } from "@/components/admin/PromptTemplatePanel";
+import { cn } from "@/lib/utils";
 
 export function AdminPage() {
   const [authed, setAuthed] = useState(!!getAdminToken());
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [outputKind, setOutputKind] = useState<OutputKind>("x_captions");
   const login = useLogin();
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export function AdminPage() {
 
   if (!authed) {
     return (
-      <div className="mx-auto max-w-md animate-fade-up">
+      <div className="mx-auto max-w-md">
         <Card>
           <CardHeader>
             <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -73,13 +77,13 @@ export function AdminPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary/80">Admin</p>
           <h1 className="font-display text-3xl font-bold tracking-tight">Knowledge base</h1>
           <p className="mt-1 max-w-xl text-muted-foreground">
-            This is the operating system behind every caption — rules, examples, and templates.
+            Pick an output type, then edit its rules, examples, principles, and template.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={logout}>
@@ -88,7 +92,26 @@ export function AdminPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="rules">
+      <div className="flex flex-wrap gap-2">
+        {OUTPUT_KINDS.map((kind) => (
+          <Button
+            key={kind}
+            type="button"
+            variant={outputKind === kind ? "default" : "outline"}
+            size="sm"
+            onClick={() => setOutputKind(kind)}
+            className={cn(outputKind === kind && "ring-1 ring-primary/40")}
+          >
+            {OUTPUT_KIND_LABELS[kind]}
+          </Button>
+        ))}
+      </div>
+
+      <p className="font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground">
+        Editing · {OUTPUT_KIND_LABELS[outputKind]}
+      </p>
+
+      <Tabs defaultValue="rules" key={outputKind}>
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="rules">Rules</TabsTrigger>
           <TabsTrigger value="good">Good examples</TabsTrigger>
@@ -98,19 +121,19 @@ export function AdminPage() {
         </TabsList>
 
         <TabsContent value="rules">
-          <RulesPanel />
+          <RulesPanel outputKind={outputKind} />
         </TabsContent>
         <TabsContent value="good">
-          <GoodExamplesPanel />
+          <GoodExamplesPanel outputKind={outputKind} />
         </TabsContent>
         <TabsContent value="bad">
-          <BadExamplesPanel />
+          <BadExamplesPanel outputKind={outputKind} />
         </TabsContent>
         <TabsContent value="principles">
-          <PrinciplesPanel />
+          <PrinciplesPanel outputKind={outputKind} />
         </TabsContent>
         <TabsContent value="prompt">
-          <PromptTemplatePanel />
+          <PromptTemplatePanel outputKind={outputKind} />
         </TabsContent>
       </Tabs>
     </div>
