@@ -17,6 +17,9 @@ export interface PromptBuilderInput {
   speaker: string;
   style: CaptionStyle;
   count?: number;
+  /** When set, model refines these captions instead of generating from scratch. */
+  currentCaptions?: string[];
+  iterationNotes?: string;
 }
 
 export interface BuiltPrompt {
@@ -127,6 +130,30 @@ export class PromptBuilder {
       count,
     };
 
+    const isIterate =
+      !!input.iterationNotes?.trim() &&
+      Array.isArray(input.currentCaptions) &&
+      input.currentCaptions.length > 0;
+
+    const iterationBlock = isIterate
+      ? `
+
+## ITERATION MODE
+You are refining an existing set of captions — not starting from scratch.
+
+### Current captions
+${input.currentCaptions!
+  .map((c, i) => `### Current Caption ${i + 1}\n${c.trim()}`)
+  .join("\n\n")}
+
+### Iteration instructions from the editor
+${input.iterationNotes!.trim()}
+
+Apply the iteration instructions while still obeying ALL rules, principles, and the good-example structure.
+Keep what already works. Change what the editor asked for.
+Produce ${count} improved captions (same count unless the notes say otherwise).`
+      : "";
+
     const prompt =
       applyTemplate(template.content, {
         count: String(count),
@@ -139,6 +166,7 @@ export class PromptBuilder {
         speaker,
         transcript,
       }) +
+      iterationBlock +
       `
 
 ## OUTPUT FORMAT (MANDATORY)

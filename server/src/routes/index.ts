@@ -20,6 +20,7 @@ router.post("/auth/login", asyncHandler(AuthController.login));
 
 router.post("/generate", asyncHandler(GenerateController.generate));
 router.post("/generate/preview", asyncHandler(GenerateController.preview));
+router.post("/generate/iterate", asyncHandler(GenerateController.iterate));
 
 router.post("/feedback", asyncHandler(FeedbackController.submit));
 

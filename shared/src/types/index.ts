@@ -155,6 +155,15 @@ export interface GenerateResponse {
   promptPreview?: string;
 }
 
+export interface IterateRequest {
+  transcript: string;
+  speaker: string;
+  style: CaptionStyle;
+  currentCaptions: string[];
+  iterationNotes: string;
+  count?: number;
+}
+
 export interface FeedbackRequest {
   captionId: string;
   type: FeedbackType;

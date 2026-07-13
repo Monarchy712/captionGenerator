@@ -4,6 +4,7 @@ import type {
   CaptionStyle,
   GenerateRequest,
   GenerateResponse,
+  IterateRequest,
   GoodExample,
   PromptTemplate,
   Rule,
@@ -23,6 +24,12 @@ export function usePreviewPrompt() {
   return useMutation({
     mutationFn: (body: GenerateRequest) =>
       api.post<{ promptPreview: string }>("/generate/preview", body),
+  });
+}
+
+export function useIterate() {
+  return useMutation({
+    mutationFn: (body: IterateRequest) => api.post<GenerateResponse>("/generate/iterate", body),
   });
 }
 

@@ -14,6 +14,7 @@ import {
   badExampleSchema,
   feedbackSchema,
   generateSchema,
+  iterateSchema,
   goodExampleSchema,
   principleSchema,
   promptRevertSchema,
@@ -62,6 +63,19 @@ export class GenerateController {
       count: body.count,
     });
     res.json({ promptPreview: built.prompt, parts: built.parts });
+  }
+
+  static async iterate(req: Request, res: Response) {
+    const body = parseBody(iterateSchema, req.body);
+    const result = await claudeService.iterateCaptions({
+      transcript: body.transcript,
+      speaker: body.speaker,
+      style: body.style as CaptionStyle,
+      currentCaptions: body.currentCaptions,
+      iterationNotes: body.iterationNotes,
+      count: body.count,
+    });
+    res.json(result);
   }
 }
 

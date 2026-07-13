@@ -9,6 +9,15 @@ export const generateSchema = z.object({
   previewOnly: z.boolean().optional().default(false),
 });
 
+export const iterateSchema = z.object({
+  transcript: z.string().min(1, "Transcript is required"),
+  speaker: z.string().min(1, "Speaker name is required"),
+  style: z.enum(CAPTION_STYLES as [string, ...string[]]),
+  currentCaptions: z.array(z.string().min(1)).min(1, "At least one current caption is required"),
+  iterationNotes: z.string().min(1, "Iteration notes are required"),
+  count: z.number().int().min(1).max(10).optional(),
+});
+
 export const feedbackSchema = z.object({
   captionId: z.string().min(1),
   type: z.enum(["like", "dislike", "edit", "used"]),
