@@ -37,11 +37,24 @@ When natural, mention the guest **{{speaker}}** by name in the caption.
 
 ## GENERATION INSTRUCTIONS
 1. Produce exactly {{count}} distinct captions.
-2. Each caption must stand alone and work as a social post for a short clip.
+2. Each caption MUST be a FULL multi-line block matching the good-example structure (hook + attribution + quotes) — NEVER a one-liner.
 3. Prefer specificity over hype. Prefer tension over summary.
 4. Mention {{speaker}} when attribution helps — do not invent a fixed persona for them.
-5. Return ONLY a valid JSON array of strings. No markdown fences. No commentary.
-Example format: ["caption one","caption two","caption three"]`;
+5. Output format (critical): separate captions with the delimiter line <<<CAPTION>>>
+   Do NOT return JSON. Do NOT wrap in markdown fences. Do NOT add commentary.
+
+Example output shape:
+<<<CAPTION>>>
+hook line goes here without a trailing period
+
+Name from Org, on why thesis
+
+"verbatim quote one"
+"verbatim quote two"
+"verbatim quote three"
+<<<CAPTION>>>
+second full multi-line caption
+...`;
 
 async function main() {
   console.log("Seeding Caption Studio database...");
@@ -142,85 +155,14 @@ async function main() {
 
   const goodCount = await prisma.goodExample.count();
   if (goodCount === 0) {
-    await prisma.goodExample.createMany({
-      data: [
-        {
-          transcript:
-            "People keep asking me if this cycle is different. The technology is different. The incentives are different. The attention span definitely isn't.",
-          caption:
-            "Arjun on this cycle:\nThe tech changed.\nThe incentives changed.\nYour attention span didn't.",
-          category: "markets",
-          tags: JSON.stringify(["cycle", "attention", "contrarian"]),
-          speaker: "Arjun",
-          style: "Contrarian",
-        },
-        {
-          transcript:
-            "Most founders obsess over product and then wonder why nobody shows up. Distribution isn't a department. It's the product strategy.",
-          caption:
-            "Rhea:\nYour product isn't the product.\nDistribution is.",
-          category: "founders",
-          tags: JSON.stringify(["distribution", "founders"]),
-          speaker: "Rhea",
-          style: "Founder",
-        },
-        {
-          transcript:
-            "Solana's bet was never just speed. It was whether you can keep the whole state coherent while pushing throughput that actually feels like the internet.",
-          caption:
-            "Anatoly on Solana:\nSpeed was never the point.\nCoherent state at internet scale was.",
-          category: "technical",
-          tags: JSON.stringify(["solana", "throughput"]),
-          speaker: "Anatoly",
-          style: "Technical",
-        },
-        {
-          transcript:
-            "Everyone wants asymmetric upside until they realize it comes with asymmetric boredom, waiting, and looking stupid in public.",
-          caption:
-            "Asymmetric upside requires asymmetric patience.\nMost people only signed up for the first half.",
-          category: "markets",
-          tags: JSON.stringify(["patience", "edge"]),
-          speaker: "Guest",
-          style: "Educational",
-        },
-        {
-          transcript:
-            "If your growth strategy is hoping Twitter algorithm loves you, you don't have a growth strategy. You have a wish.",
-          caption:
-            "Hoping the algorithm saves you\nisn't a growth strategy.",
-          category: "founders",
-          tags: JSON.stringify(["growth", "viral"]),
-          speaker: "Guest",
-          style: "Viral",
-        },
-      ],
-    });
+    const { FRESH_GOOD_EXAMPLES } = await import("./good-examples-data");
+    await prisma.goodExample.createMany({ data: FRESH_GOOD_EXAMPLES });
   }
 
   const badCount = await prisma.badExample.count();
   if (badCount === 0) {
-    await prisma.badExample.createMany({
-      data: [
-        {
-          caption: "This is a must-watch! You won't believe what happens next 🔥🔥🔥",
-          reason: "Generic engagement bait with emoji spam and zero substance.",
-        },
-        {
-          caption: "Watch till the end for the big reveal!",
-          reason: "Explicitly forbidden phrase; manipulative and low-signal.",
-        },
-        {
-          caption:
-            "In this clip, the speaker discusses various important topics related to cryptocurrency markets and provides insightful commentary.",
-          reason: "Pure summary. No hook, no tension, no voice.",
-        },
-        {
-          caption: "Absolutely incredible groundbreaking paradigm shift that changes everything forever!!!",
-          reason: "Empty hype. No specificity. Sounds like spam.",
-        },
-      ],
-    });
+    const { FRESH_BAD_EXAMPLES } = await import("./bad-examples-data");
+    await prisma.badExample.createMany({ data: FRESH_BAD_EXAMPLES });
   }
 
   console.log("Seed complete.");

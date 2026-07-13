@@ -21,7 +21,9 @@ export class ClaudeProvider extends BaseAIProvider {
   async generateCaptions(input: GenerateCaptionsInput): Promise<string[]> {
     const response = await this.client.messages.create({
       model: this.model,
-      max_tokens: 2048,
+      max_tokens: 4096,
+      system:
+        "You write multi-line crypto clip captions matching the good-example structure (hook, attribution, quotes). Separate each full caption with <<<CAPTION>>>. Never return JSON. Never return one-liners.",
       messages: [{ role: "user", content: input.prompt }],
     });
 

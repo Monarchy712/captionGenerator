@@ -113,11 +113,10 @@ export class PromptTemplateRepository {
 }
 
 export class GoodExampleRepository {
-  async findAll(filters?: { speaker?: string; style?: string; category?: string; activeOnly?: boolean }) {
+  async findAll(filters?: { style?: string; category?: string; activeOnly?: boolean }) {
     const rows = await prisma.goodExample.findMany({
       where: {
         isActive: filters?.activeOnly ? true : undefined,
-        speaker: filters?.speaker,
         style: filters?.style,
         category: filters?.category,
       },
@@ -126,19 +125,16 @@ export class GoodExampleRepository {
     return rows.map((r) => ({ ...r, tags: parseJsonArray(r.tags) }));
   }
 
-  async findRelevant(opts: { speaker?: string; style?: string; limit: number }) {
-    // Prefer matching speaker/style, then fall back to recent active examples.
-    const matched = await prisma.goodExample.findMany({
-      where: {
-        isActive: true,
-        OR: [
-          ...(opts.speaker ? [{ speaker: opts.speaker }] : []),
-          ...(opts.style ? [{ style: opts.style }] : []),
-        ],
-      },
-      orderBy: { updatedAt: "desc" },
-      take: opts.limit,
-    });
+  async findRelevant(opts: { style?: string; limit: number }) {
+    // Prefer matching style, then fall back to recent active examples.
+    // Guest name is optional metadata only — never used for retrieval.
+    const matched = opts.style
+      ? await prisma.goodExample.findMany({
+          where: { isActive: true, style: opts.style },
+          orderBy: { updatedAt: "desc" },
+          take: opts.limit,
+        })
+      : [];
 
     if (matched.length >= opts.limit) {
       return matched.slice(0, opts.limit).map((r) => ({ ...r, tags: parseJsonArray(r.tags) }));
@@ -170,7 +166,7 @@ export class GoodExampleRepository {
         caption: data.caption,
         category: data.category ?? "general",
         tags: toJsonArray(data.tags ?? []),
-        speaker: data.speaker?.trim() || "Guest",
+        speaker: data.speaker?.trim() || "",
         style: data.style,
         isActive: data.isActive ?? true,
       },

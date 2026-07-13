@@ -33,12 +33,12 @@ export class GroqProvider extends BaseAIProvider {
       body: JSON.stringify({
         model: this.model,
         temperature: 0.7,
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [
           {
             role: "system",
             content:
-              "You are a caption writer. Always respond with a valid JSON array of strings only — no markdown fences, no commentary.",
+              "You write multi-line crypto clip captions. Always match the good-example structure (hook, attribution, quotes). Separate each full caption with the exact delimiter line <<<CAPTION>>>. Never return JSON. Never return one-liners. No markdown fences.",
           },
           { role: "user", content: input.prompt },
         ],

@@ -36,10 +36,10 @@ function formatSpeakerContext(speakerName: string): string {
 function formatGoodExamples(examples: GoodExample[]): string {
   if (examples.length === 0) return "(No good examples available yet.)";
   return examples
-    .map(
-      (ex, i) =>
-        `### Good Example ${i + 1}${ex.style ? ` [${ex.style}]` : ""}${ex.speaker ? ` (guest: ${ex.speaker})` : ""}\nTranscript excerpt:\n${ex.transcript}\n\nWinning caption:\n${ex.caption}`
-    )
+    .map((ex, i) => {
+      const meta = [ex.style, ex.category, ex.speaker].filter(Boolean).join(" / ");
+      return `### Good Example ${i + 1}${meta ? ` [${meta}]` : ""}\nTranscript excerpt:\n${ex.transcript}\n\nWinning caption:\n${ex.caption}`;
+    })
     .join("\n\n");
 }
 
@@ -85,7 +85,10 @@ export class PromptBuilder {
 
     const rulesText =
       rules.length > 0
-        ? rules.map((r, i) => `${i + 1}. ${r.content}`).join("\n")
+        ? [
+            "HARD CONSTRAINTS — follow every rule below. If a good example conflicts with a rule, the RULE wins.",
+            ...rules.map((r, i) => `${i + 1}. ${r.content}`),
+          ].join("\n")
         : "(No rules configured.)";
 
     const principlesText =
@@ -124,17 +127,25 @@ export class PromptBuilder {
       count,
     };
 
-    const prompt = applyTemplate(template.content, {
-      count: String(count),
-      rules: rulesText,
-      principles: principlesText,
-      speaker_profile: formatSpeakerContext(speaker),
-      good_examples: formatGoodExamples(parts.goodExamples),
-      bad_examples: formatBadExamples(parts.badExamples),
-      style: input.style,
-      speaker,
-      transcript,
-    });
+    const prompt =
+      applyTemplate(template.content, {
+        count: String(count),
+        rules: rulesText,
+        principles: principlesText,
+        speaker_profile: formatSpeakerContext(speaker),
+        good_examples: formatGoodExamples(parts.goodExamples),
+        bad_examples: formatBadExamples(parts.badExamples),
+        style: input.style,
+        speaker,
+        transcript,
+      }) +
+      `
+
+## OUTPUT FORMAT (MANDATORY)
+Produce exactly ${count} FULL multi-line captions matching the good-example structure (hook + attribution + quotes). Never one-liners.
+Separate each caption with this exact delimiter on its own line:
+<<<CAPTION>>>
+Do not use JSON. Do not use markdown fences. Do not add commentary before or after.`;
 
     return { prompt, parts };
   }

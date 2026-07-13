@@ -62,7 +62,7 @@ export interface GoodExample {
   caption: string;
   category: string;
   tags: string[];
-  speaker: string;
+  speaker?: string | null;
   style?: string | null;
   isActive: boolean;
   createdAt: string;

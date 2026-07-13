@@ -63,7 +63,7 @@ model GoodExample {
   caption    String
   category   String   @default("general")
   tags       String   @default("[]") // JSON array stored as string for SQLite
-  speaker    String
+  speaker    String   @default("") // optional guest name metadata — not a profile link
   style      String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())

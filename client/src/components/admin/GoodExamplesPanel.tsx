@@ -36,7 +36,8 @@ export function GoodExamplesPanel() {
           <div>
             <CardTitle>Good examples</CardTitle>
             <CardDescription>
-              Winning transcript → caption pairs retrieved into prompts (RAG-ready).
+              Winning transcript → caption pairs. Guest name is optional metadata only — examples
+              are matched by style, not by speaker.
             </CardDescription>
           </div>
           <Button size="sm" variant="outline" onClick={() => setOpen(!open)}>
@@ -47,13 +48,6 @@ export function GoodExamplesPanel() {
         {open && (
           <CardContent className="space-y-3 border-t border-border pt-5">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Guest name (optional metadata)">
-                <Input
-                  value={form.speaker}
-                  onChange={(e) => setForm({ ...form, speaker: e.target.value })}
-                  placeholder="Who was speaking in this example"
-                />
-              </Field>
               <Field label="Style">
                 <Input value={form.style} onChange={(e) => setForm({ ...form, style: e.target.value })} />
               </Field>
@@ -62,6 +56,13 @@ export function GoodExamplesPanel() {
               </Field>
               <Field label="Tags (comma-separated)">
                 <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+              </Field>
+              <Field label="Guest name (optional)">
+                <Input
+                  value={form.speaker}
+                  onChange={(e) => setForm({ ...form, speaker: e.target.value })}
+                  placeholder="Optional — not used for matching"
+                />
               </Field>
             </div>
             <Field label="Transcript">
@@ -73,7 +74,7 @@ export function GoodExamplesPanel() {
             </Field>
             <Field label="Caption">
               <Textarea
-                rows={3}
+                rows={6}
                 value={form.caption}
                 onChange={(e) => setForm({ ...form, caption: e.target.value })}
               />
@@ -104,9 +105,11 @@ export function GoodExamplesPanel() {
             <CardContent className="space-y-3 pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-                  <span className="rounded bg-secondary px-2 py-0.5">{ex.speaker}</span>
                   {ex.style && <span className="rounded bg-secondary px-2 py-0.5">{ex.style}</span>}
                   <span className="rounded bg-secondary px-2 py-0.5">{ex.category}</span>
+                  {ex.speaker ? (
+                    <span className="rounded bg-secondary px-2 py-0.5 normal-case">{ex.speaker}</span>
+                  ) : null}
                 </div>
                 <Button
                   variant="ghost"

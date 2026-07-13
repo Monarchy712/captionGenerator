@@ -76,7 +76,6 @@ export class FeedbackController {
 export class ExamplesController {
   static async listGood(req: Request, res: Response) {
     const examples = await goodExampleRepo.findAll({
-      speaker: req.query.speaker as string | undefined,
       style: req.query.style as string | undefined,
       category: req.query.category as string | undefined,
     });
