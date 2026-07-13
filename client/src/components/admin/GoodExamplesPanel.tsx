@@ -22,7 +22,7 @@ export function GoodExamplesPanel() {
     caption: "",
     category: "general",
     tags: "",
-    speaker: "Rhea",
+    speaker: "",
     style: "Viral",
   });
 
@@ -47,8 +47,12 @@ export function GoodExamplesPanel() {
         {open && (
           <CardContent className="space-y-3 border-t border-border pt-5">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Speaker">
-                <Input value={form.speaker} onChange={(e) => setForm({ ...form, speaker: e.target.value })} />
+              <Field label="Guest name (optional metadata)">
+                <Input
+                  value={form.speaker}
+                  onChange={(e) => setForm({ ...form, speaker: e.target.value })}
+                  placeholder="Who was speaking in this example"
+                />
               </Field>
               <Field label="Style">
                 <Input value={form.style} onChange={(e) => setForm({ ...form, style: e.target.value })} />
@@ -84,7 +88,7 @@ export function GoodExamplesPanel() {
                     .map((t) => t.trim())
                     .filter(Boolean),
                 });
-                setForm({ transcript: "", caption: "", category: "general", tags: "", speaker: "Rhea", style: "Viral" });
+                setForm({ transcript: "", caption: "", category: "general", tags: "", speaker: "", style: "Viral" });
                 setOpen(false);
               }}
             >

@@ -1,7 +1,7 @@
 /**
  * ExampleRetriever abstraction.
  *
- * Current: SQLite top-N retrieval with speaker/style preference.
+ * Current: SQLite top-N retrieval with style preference.
  * Future: swap implementation to Chroma/Qdrant vector search without
  * changing PromptBuilder or callers.
  */
@@ -18,15 +18,14 @@ export interface RetrievedExamples {
 export interface ExampleRetriever {
   retrieve(input: {
     transcript: string;
-    speaker?: string;
     style?: CaptionStyle | string;
     topN?: number;
   }): Promise<RetrievedExamples>;
 }
 
 /**
- * SQLite-backed retriever. Selects relevant good examples by speaker/style
- * match, plus recent bad examples. Designed to be replaced by vector search.
+ * SQLite-backed retriever. Selects relevant good examples by style match,
+ * plus recent bad examples. Designed to be replaced by vector search.
  */
 export class SqliteExampleRetriever implements ExampleRetriever {
   constructor(
@@ -36,7 +35,6 @@ export class SqliteExampleRetriever implements ExampleRetriever {
 
   async retrieve(input: {
     transcript: string;
-    speaker?: string;
     style?: CaptionStyle | string;
     topN?: number;
   }): Promise<RetrievedExamples> {
@@ -47,7 +45,6 @@ export class SqliteExampleRetriever implements ExampleRetriever {
 
     const [good, bad] = await Promise.all([
       this.goodRepo.findRelevant({
-        speaker: input.speaker,
         style: input.style,
         limit: topN,
       }),

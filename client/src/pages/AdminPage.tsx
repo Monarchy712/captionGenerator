@@ -10,7 +10,6 @@ import { RulesPanel } from "@/components/admin/RulesPanel";
 import { GoodExamplesPanel } from "@/components/admin/GoodExamplesPanel";
 import { BadExamplesPanel } from "@/components/admin/BadExamplesPanel";
 import { PrinciplesPanel } from "@/components/admin/PrinciplesPanel";
-import { SpeakersPanel } from "@/components/admin/SpeakersPanel";
 import { PromptTemplatePanel } from "@/components/admin/PromptTemplatePanel";
 
 export function AdminPage() {
@@ -50,7 +49,7 @@ export function AdminPage() {
             </div>
             <CardTitle>Admin access</CardTitle>
             <CardDescription>
-              Manage rules, examples, speaker profiles, and prompt templates.
+              Manage rules, examples, writing principles, and prompt templates.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -80,7 +79,7 @@ export function AdminPage() {
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary/80">Admin</p>
           <h1 className="font-display text-3xl font-bold tracking-tight">Knowledge base</h1>
           <p className="mt-1 max-w-xl text-muted-foreground">
-            This is the operating system behind every caption — rules, examples, voice, and templates.
+            This is the operating system behind every caption — rules, examples, and templates.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={logout}>
@@ -95,7 +94,6 @@ export function AdminPage() {
           <TabsTrigger value="good">Good examples</TabsTrigger>
           <TabsTrigger value="bad">Bad examples</TabsTrigger>
           <TabsTrigger value="principles">Principles</TabsTrigger>
-          <TabsTrigger value="speakers">Speakers</TabsTrigger>
           <TabsTrigger value="prompt">Prompt template</TabsTrigger>
         </TabsList>
 
@@ -110,9 +108,6 @@ export function AdminPage() {
         </TabsContent>
         <TabsContent value="principles">
           <PrinciplesPanel />
-        </TabsContent>
-        <TabsContent value="speakers">
-          <SpeakersPanel />
         </TabsContent>
         <TabsContent value="prompt">
           <PromptTemplatePanel />

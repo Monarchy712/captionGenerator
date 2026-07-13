@@ -7,7 +7,7 @@ function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
-const DEFAULT_TEMPLATE = `You are an expert crypto content caption writer for short-form video clips.
+const DEFAULT_TEMPLATE = `You are an expert crypto content caption writer for short-form video clips from podcasts and interviews.
 
 Your job is to generate {{count}} high-performing captions for the transcript below.
 
@@ -17,7 +17,7 @@ Your job is to generate {{count}} high-performing captions for the transcript be
 ## WRITING PRINCIPLES
 {{principles}}
 
-## SPEAKER CONTEXT
+## GUEST / SPEAKER
 {{speaker_profile}}
 
 ## GOOD EXAMPLES
@@ -29,7 +29,8 @@ Never produce captions like these:
 {{bad_examples}}
 
 ## STYLE TARGET
-Generate captions in the **{{style}}** style for speaker **{{speaker}}**.
+Generate captions in the **{{style}}** style.
+When natural, mention the guest **{{speaker}}** by name in the caption.
 
 ## TRANSCRIPT
 {{transcript}}
@@ -38,7 +39,8 @@ Generate captions in the **{{style}}** style for speaker **{{speaker}}**.
 1. Produce exactly {{count}} distinct captions.
 2. Each caption must stand alone and work as a social post for a short clip.
 3. Prefer specificity over hype. Prefer tension over summary.
-4. Return ONLY a valid JSON array of strings. No markdown fences. No commentary.
+4. Mention {{speaker}} when attribution helps — do not invent a fixed persona for them.
+5. Return ONLY a valid JSON array of strings. No markdown fences. No commentary.
 Example format: ["caption one","caption two","caption three"]`;
 
 async function main() {
@@ -86,7 +88,7 @@ async function main() {
     {
       title: "Voice Over Formula",
       content:
-        "Match the speaker's cadence and vocabulary. A founder should sound like a founder — not a growth marketer.",
+        "Write in a sharp, crypto-native voice. Guests change episode to episode — attribute them by name when useful, but never invent a fixed persona.",
     },
     {
       title: "Tension Over Summary",
@@ -112,88 +114,29 @@ async function main() {
     });
   }
 
-  const speakers = [
-    {
-      name: "Rhea",
-      tone: "Sharp, confident, founder energy",
-      founderStyle: "Builder-first, opinionated, low fluff",
-      technicalDepth: "Medium-high — comfortable with product and market mechanics",
-      audience: "Crypto founders, operators, and serious builders",
-      writingStyle: "Short sentences. Strong verbs. Minimal hedging.",
-      vocabulary: "runway, distribution, product-market fit, conviction, leverage, narrative",
-      notes: "Avoid soft motivational language. Prefer decisive framing.",
-    },
-    {
-      name: "Arjun",
-      tone: "Analytical, calm, high-signal",
-      founderStyle: "Investor-operator hybrid",
-      technicalDepth: "High — markets, protocols, incentives",
-      audience: "Traders, researchers, crypto-native operators",
-      writingStyle: "Precise, slightly dry wit, thesis-driven",
-      vocabulary: "asymmetric, incentives, liquidity, reflexivity, edge, regime",
-      notes: "Strong when framing second-order effects.",
-    },
-    {
-      name: "Scott",
-      tone: "Direct, pragmatic, slightly contrarian",
-      founderStyle: "Operator storytelling",
-      technicalDepth: "Medium",
-      audience: "Operators and crypto Twitter",
-      writingStyle: "Punchy, conversational, anti-hype",
-      vocabulary: "execution, focus, nonsense, signal, ship, real talk",
-      notes: "Works well with blunt one-liners.",
-    },
-    {
-      name: "Anatoly",
-      tone: "Technical, understated, high credibility",
-      founderStyle: "Protocol founder / systems thinker",
-      technicalDepth: "Very high",
-      audience: "Engineers, protocol people, serious crypto",
-      writingStyle: "Sparse, precise, systems-oriented",
-      vocabulary: "throughput, latency, consensus, validators, scaling, architecture",
-      notes: "Never oversell. Let technical confidence speak.",
-    },
-    {
-      name: "Other",
-      tone: "Neutral professional",
-      founderStyle: "Flexible",
-      technicalDepth: "Medium",
-      audience: "General crypto audience",
-      writingStyle: "Clear and punchy",
-      vocabulary: "crypto, markets, builders, narrative",
-      notes: "Default profile when speaker is unknown.",
-    },
-  ];
+  // Speaker profiles removed — guests are free-text names entered per generation.
 
-  for (const s of speakers) {
-    await prisma.speakerProfile.upsert({
-      where: { name: s.name },
-      update: {},
-      create: s,
-    });
-  }
-
-  const template = await prisma.promptTemplate.upsert({
-    where: { name: "default" },
-    update: {},
-    create: {
-      name: "default",
-      content: DEFAULT_TEMPLATE,
-      version: 1,
-      isActive: true,
-    },
-  });
-
-  const versionCount = await prisma.promptTemplateVersion.count({
-    where: { templateId: template.id },
-  });
-  if (versionCount === 0) {
-    await prisma.promptTemplateVersion.create({
+  let template = await prisma.promptTemplate.findUnique({ where: { name: "default" } });
+  if (!template) {
+    template = await prisma.promptTemplate.create({
       data: {
-        templateId: template.id,
+        name: "default",
         content: DEFAULT_TEMPLATE,
         version: 1,
+        isActive: true,
       },
+    });
+    await prisma.promptTemplateVersion.create({
+      data: { templateId: template.id, content: DEFAULT_TEMPLATE, version: 1 },
+    });
+  } else if (template.content !== DEFAULT_TEMPLATE) {
+    const nextVersion = template.version + 1;
+    await prisma.promptTemplateVersion.create({
+      data: { templateId: template.id, content: DEFAULT_TEMPLATE, version: nextVersion },
+    });
+    template = await prisma.promptTemplate.update({
+      where: { id: template.id },
+      data: { content: DEFAULT_TEMPLATE, version: nextVersion },
     });
   }
 
@@ -205,7 +148,7 @@ async function main() {
           transcript:
             "People keep asking me if this cycle is different. The technology is different. The incentives are different. The attention span definitely isn't.",
           caption:
-            "The tech changed.\nThe incentives changed.\nYour attention span didn't.",
+            "Arjun on this cycle:\nThe tech changed.\nThe incentives changed.\nYour attention span didn't.",
           category: "markets",
           tags: JSON.stringify(["cycle", "attention", "contrarian"]),
           speaker: "Arjun",
@@ -215,7 +158,7 @@ async function main() {
           transcript:
             "Most founders obsess over product and then wonder why nobody shows up. Distribution isn't a department. It's the product strategy.",
           caption:
-            "Your product isn't the product.\nDistribution is.",
+            "Rhea:\nYour product isn't the product.\nDistribution is.",
           category: "founders",
           tags: JSON.stringify(["distribution", "founders"]),
           speaker: "Rhea",
@@ -225,7 +168,7 @@ async function main() {
           transcript:
             "Solana's bet was never just speed. It was whether you can keep the whole state coherent while pushing throughput that actually feels like the internet.",
           caption:
-            "Speed was never the point.\nCoherent state at internet scale was.",
+            "Anatoly on Solana:\nSpeed was never the point.\nCoherent state at internet scale was.",
           category: "technical",
           tags: JSON.stringify(["solana", "throughput"]),
           speaker: "Anatoly",
@@ -238,7 +181,7 @@ async function main() {
             "Asymmetric upside requires asymmetric patience.\nMost people only signed up for the first half.",
           category: "markets",
           tags: JSON.stringify(["patience", "edge"]),
-          speaker: "Scott",
+          speaker: "Guest",
           style: "Educational",
         },
         {
@@ -248,7 +191,7 @@ async function main() {
             "Hoping the algorithm saves you\nisn't a growth strategy.",
           category: "founders",
           tags: JSON.stringify(["growth", "viral"]),
-          speaker: "Rhea",
+          speaker: "Guest",
           style: "Viral",
         },
       ],

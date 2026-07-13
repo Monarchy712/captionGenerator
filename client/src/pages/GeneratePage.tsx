@@ -4,12 +4,13 @@ import { useForm, Controller } from "react-hook-form";
 import { CAPTION_STYLES, type CaptionStyle, type GeneratedCaption } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CaptionCard } from "@/components/captions/CaptionCard";
-import { useGenerate, usePreviewPrompt, useSpeakers } from "@/hooks/useCaptionApi";
+import { useGenerate, usePreviewPrompt } from "@/hooks/useCaptionApi";
 import { ApiClientError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,6 @@ interface FormValues {
 }
 
 export function GeneratePage() {
-  const speakersQuery = useSpeakers();
   const generate = useGenerate();
   const preview = usePreviewPrompt();
 
@@ -32,20 +32,19 @@ export function GeneratePage() {
   const { register, handleSubmit, control, watch, formState } = useForm<FormValues>({
     defaultValues: {
       transcript: "",
-      speaker: "Rhea",
+      speaker: "",
       style: "Viral",
     },
   });
 
   const values = watch();
-  const speakers = speakersQuery.data ?? [];
 
   async function onGenerate(data: FormValues) {
     setError(null);
     try {
       const result = await generate.mutateAsync({
         transcript: data.transcript,
-        speaker: data.speaker,
+        speaker: data.speaker.trim(),
         style: data.style,
         count: 5,
       });
@@ -61,7 +60,7 @@ export function GeneratePage() {
     try {
       const result = await preview.mutateAsync({
         transcript: values.transcript,
-        speaker: values.speaker,
+        speaker: values.speaker.trim(),
         style: values.style,
         count: 5,
         previewOnly: true,
@@ -77,6 +76,8 @@ export function GeneratePage() {
     setCaptions((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
   }
 
+  const canSubmit = !!values.transcript?.trim() && !!values.speaker?.trim();
+
   return (
     <div className="space-y-8">
       <div className="space-y-2 animate-fade-up">
@@ -85,8 +86,8 @@ export function GeneratePage() {
           Caption Studio
         </h1>
         <p className="max-w-2xl text-muted-foreground">
-          Paste a transcript. The backend assembles rules, examples, and speaker context into the
-          prompt — then returns five captions ready for feedback.
+          Paste a transcript and the guest&apos;s name. The backend assembles rules and examples into
+          the prompt — then returns five captions that can mention the speaker.
         </p>
       </div>
 
@@ -112,31 +113,18 @@ export function GeneratePage() {
         <div className="grid gap-4 sm:grid-cols-2 animate-fade-up" style={{ animationDelay: "80ms" }}>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Speaker</CardTitle>
+              <CardTitle className="text-base">Speaker / guest</CardTitle>
+              <CardDescription>Type the guest&apos;s name — used for attribution in captions.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Controller
-                name="speaker"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select speaker" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(speakers.length
-                        ? speakers.map((s) => s.name)
-                        : ["Rhea", "Arjun", "Scott", "Anatoly", "Other"]
-                      ).map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+              <Input
+                {...register("speaker", { required: true })}
+                placeholder="e.g. Vitalik, Anatoly, Jane Doe"
+                autoComplete="off"
               />
+              {formState.errors.speaker && (
+                <p className="mt-2 text-sm text-destructive">Speaker name is required</p>
+              )}
             </CardContent>
           </Card>
 
@@ -174,7 +162,7 @@ export function GeneratePage() {
         )}
 
         <div className="flex flex-wrap items-center gap-3 animate-fade-up" style={{ animationDelay: "120ms" }}>
-          <Button type="submit" size="lg" disabled={generate.isPending || !values.transcript?.trim()}>
+          <Button type="submit" size="lg" disabled={generate.isPending || !canSubmit}>
             {generate.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -191,7 +179,7 @@ export function GeneratePage() {
             type="button"
             variant="outline"
             size="lg"
-            disabled={preview.isPending || !values.transcript?.trim()}
+            disabled={preview.isPending || !canSubmit}
             onClick={onPreview}
           >
             {preview.isPending ? (
@@ -213,7 +201,7 @@ export function GeneratePage() {
                   <div>
                     <CardTitle className="text-base">Assembled prompt</CardTitle>
                     <CardDescription>
-                      Exact prompt the backend sends to Claude — built from rules, examples, and profiles.
+                      Exact prompt the backend sends to the model — built from rules and examples.
                     </CardDescription>
                   </div>
                   <ChevronDown

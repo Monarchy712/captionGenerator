@@ -3,7 +3,7 @@ import { CAPTION_STYLES } from "@caption-studio/shared";
 
 export const generateSchema = z.object({
   transcript: z.string().min(1, "Transcript is required"),
-  speaker: z.string().min(1, "Speaker is required"),
+  speaker: z.string().min(1, "Speaker name is required"),
   style: z.enum(CAPTION_STYLES as [string, ...string[]]),
   count: z.number().int().min(1).max(10).optional().default(5),
   previewOnly: z.boolean().optional().default(false),
@@ -21,7 +21,7 @@ export const goodExampleSchema = z.object({
   caption: z.string().min(1),
   category: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  speaker: z.string().min(1),
+  speaker: z.string().optional().default(""),
   style: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
 });

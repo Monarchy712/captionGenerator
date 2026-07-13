@@ -34,7 +34,8 @@ export function PromptTemplatePanel() {
             <code className="text-primary">
               {"{{rules}} {{principles}} {{speaker_profile}} {{good_examples}} {{bad_examples}} {{transcript}} {{speaker}} {{style}} {{count}}"}
             </code>
-            . Saving creates a new version — never overwrites history.
+            . <code className="text-muted-foreground">{"{{speaker}}"}</code> is the free-text guest name from the generate form.{" "}
+            <code className="text-muted-foreground">{"{{speaker_profile}}"}</code> injects attribution instructions for that name. Saving creates a new version.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

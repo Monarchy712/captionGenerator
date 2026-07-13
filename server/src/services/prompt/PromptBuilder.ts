@@ -1,13 +1,12 @@
 /**
- * PromptBuilder — assembles the full Claude prompt from DB context.
- * The frontend never builds prompts; this is the single source of truth.
+ * PromptBuilder — assembles the full prompt from DB context.
+ * Speaker is a free-text guest name only (no predefined profiles).
  */
 
-import type { AssembledPromptParts, CaptionStyle, GoodExample, SpeakerProfile } from "@caption-studio/shared";
+import type { AssembledPromptParts, CaptionStyle, GoodExample } from "@caption-studio/shared";
 import {
   PromptTemplateRepository,
   RuleRepository,
-  SpeakerRepository,
   WritingPrincipleRepository,
 } from "../../repositories";
 import { createExampleRetriever, type ExampleRetriever } from "../retriever/ExampleRetriever";
@@ -25,22 +24,13 @@ export interface BuiltPrompt {
   parts: AssembledPromptParts;
 }
 
-function formatSpeakerProfile(profile: SpeakerProfile | null, speakerName: string): string {
-  if (!profile) {
-    return `Speaker: ${speakerName}\n(No detailed profile on file — write in a clear, professional crypto-native voice.)`;
-  }
+function formatSpeakerContext(speakerName: string): string {
+  const name = speakerName.trim() || "the speaker";
   return [
-    `Name: ${profile.name}`,
-    `Tone: ${profile.tone}`,
-    `Founder style: ${profile.founderStyle}`,
-    `Technical depth: ${profile.technicalDepth}`,
-    `Audience: ${profile.audience}`,
-    `Writing style: ${profile.writingStyle}`,
-    `Vocabulary: ${profile.vocabulary}`,
-    profile.notes ? `Notes: ${profile.notes}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+    `Guest / speaker name: ${name}`,
+    "This is a podcast or clip guest — do NOT invent a fixed persona, tone profile, or vocabulary list.",
+    `When it strengthens the caption, mention "${name}" by name (attribution). Do not force their name into every line awkwardly.`,
+  ].join("\n");
 }
 
 function formatGoodExamples(examples: GoodExample[]): string {
@@ -48,7 +38,7 @@ function formatGoodExamples(examples: GoodExample[]): string {
   return examples
     .map(
       (ex, i) =>
-        `### Good Example ${i + 1} [${ex.speaker}${ex.style ? ` / ${ex.style}` : ""}]\nTranscript excerpt:\n${ex.transcript}\n\nWinning caption:\n${ex.caption}`
+        `### Good Example ${i + 1}${ex.style ? ` [${ex.style}]` : ""}${ex.speaker ? ` (guest: ${ex.speaker})` : ""}\nTranscript excerpt:\n${ex.transcript}\n\nWinning caption:\n${ex.caption}`
     )
     .join("\n\n");
 }
@@ -68,7 +58,6 @@ export class PromptBuilder {
   constructor(
     private rulesRepo = new RuleRepository(),
     private principlesRepo = new WritingPrincipleRepository(),
-    private speakersRepo = new SpeakerRepository(),
     private templatesRepo = new PromptTemplateRepository(),
     private retriever: ExampleRetriever = createExampleRetriever()
   ) {}
@@ -76,16 +65,16 @@ export class PromptBuilder {
   async build(input: PromptBuilderInput): Promise<BuiltPrompt> {
     const count = input.count ?? 5;
     const transcript = input.transcript.trim();
+    const speaker = input.speaker.trim();
     if (!transcript) throw new AppError(400, "Transcript is required");
+    if (!speaker) throw new AppError(400, "Speaker name is required");
 
-    const [rules, principles, speakerProfile, template, examples] = await Promise.all([
+    const [rules, principles, template, examples] = await Promise.all([
       this.rulesRepo.findAll(true),
       this.principlesRepo.findAll(true),
-      this.speakersRepo.findByName(input.speaker),
       this.templatesRepo.findActive(),
       this.retriever.retrieve({
         transcript,
-        speaker: input.speaker,
         style: input.style,
       }),
     ]);
@@ -107,22 +96,7 @@ export class PromptBuilder {
     const parts: AssembledPromptParts = {
       rules: rules.map((r) => r.content),
       principles: principles.map((p) => `**${p.title}**: ${p.content}`),
-      speakerProfile: speakerProfile
-        ? {
-            id: speakerProfile.id,
-            name: speakerProfile.name,
-            tone: speakerProfile.tone,
-            founderStyle: speakerProfile.founderStyle,
-            technicalDepth: speakerProfile.technicalDepth,
-            audience: speakerProfile.audience,
-            writingStyle: speakerProfile.writingStyle,
-            vocabulary: speakerProfile.vocabulary,
-            notes: speakerProfile.notes,
-            isActive: speakerProfile.isActive,
-            createdAt: speakerProfile.createdAt.toISOString(),
-            updatedAt: speakerProfile.updatedAt.toISOString(),
-          }
-        : null,
+      speakerProfile: null,
       goodExamples: examples.good.map((ex) => ({
         id: ex.id,
         transcript: ex.transcript,
@@ -145,7 +119,7 @@ export class PromptBuilder {
       })),
       template: template.content,
       transcript,
-      speaker: input.speaker,
+      speaker,
       style: input.style,
       count,
     };
@@ -154,11 +128,11 @@ export class PromptBuilder {
       count: String(count),
       rules: rulesText,
       principles: principlesText,
-      speaker_profile: formatSpeakerProfile(parts.speakerProfile, input.speaker),
+      speaker_profile: formatSpeakerContext(speaker),
       good_examples: formatGoodExamples(parts.goodExamples),
       bad_examples: formatBadExamples(parts.badExamples),
       style: input.style,
-      speaker: input.speaker,
+      speaker,
       transcript,
     });
 

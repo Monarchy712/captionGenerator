@@ -7,19 +7,11 @@ import type {
   GoodExample,
   PromptTemplate,
   Rule,
-  SpeakerProfile,
   WritingPrinciple,
   FeedbackRequest,
   GeneratedCaption,
 } from "@caption-studio/shared";
 import { api } from "@/lib/api";
-
-export function useSpeakers() {
-  return useQuery({
-    queryKey: ["speakers"],
-    queryFn: () => api.get<SpeakerProfile[]>("/speakers"),
-  });
-}
 
 export function useGenerate() {
   return useMutation({
@@ -151,39 +143,6 @@ export function useDeletePrinciple() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/principles/${id}`, true),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["principles"] }),
-  });
-}
-
-export function useAdminSpeakers() {
-  return useQuery({
-    queryKey: ["speakers"],
-    queryFn: () => api.get<SpeakerProfile[]>("/speakers"),
-  });
-}
-
-export function useCreateSpeaker() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: Partial<SpeakerProfile>) =>
-      api.post<SpeakerProfile>("/speakers", body, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["speakers"] }),
-  });
-}
-
-export function useUpdateSpeaker() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, ...body }: Partial<SpeakerProfile> & { id: string }) =>
-      api.put<SpeakerProfile>(`/speakers/${id}`, body, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["speakers"] }),
-  });
-}
-
-export function useDeleteSpeaker() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api.delete(`/speakers/${id}`, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["speakers"] }),
   });
 }
 

@@ -160,7 +160,7 @@ export class GoodExampleRepository {
     caption: string;
     category?: string;
     tags?: string[];
-    speaker: string;
+    speaker?: string;
     style?: string;
     isActive?: boolean;
   }) {
@@ -170,7 +170,7 @@ export class GoodExampleRepository {
         caption: data.caption,
         category: data.category ?? "general",
         tags: toJsonArray(data.tags ?? []),
-        speaker: data.speaker,
+        speaker: data.speaker?.trim() || "Guest",
         style: data.style,
         isActive: data.isActive ?? true,
       },

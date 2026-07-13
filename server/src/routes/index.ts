@@ -7,31 +7,22 @@ import {
   PrinciplesController,
   PromptTemplateController,
   RulesController,
-  SpeakersController,
 } from "../controllers";
 import { asyncHandler, requireAdmin } from "../middleware";
 
 const router = Router();
 
-// Health
 router.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "caption-studio" });
 });
 
-// Auth
 router.post("/auth/login", asyncHandler(AuthController.login));
 
-// Generation (public for content team)
 router.post("/generate", asyncHandler(GenerateController.generate));
 router.post("/generate/preview", asyncHandler(GenerateController.preview));
 
-// Feedback loop
 router.post("/feedback", asyncHandler(FeedbackController.submit));
 
-// Speakers — list is public for the generate form
-router.get("/speakers", asyncHandler(SpeakersController.list));
-
-// Admin-protected management APIs
 router.use(requireAdmin);
 
 router.get("/examples", asyncHandler(ExamplesController.listGood));
@@ -54,10 +45,6 @@ router.get("/principles", asyncHandler(PrinciplesController.list));
 router.post("/principles", asyncHandler(PrinciplesController.create));
 router.put("/principles/:id", asyncHandler(PrinciplesController.update));
 router.delete("/principles/:id", asyncHandler(PrinciplesController.delete));
-
-router.post("/speakers", asyncHandler(SpeakersController.create));
-router.put("/speakers/:id", asyncHandler(SpeakersController.update));
-router.delete("/speakers/:id", asyncHandler(SpeakersController.delete));
 
 router.get("/prompt-template", asyncHandler(PromptTemplateController.get));
 router.put("/prompt-template", asyncHandler(PromptTemplateController.update));
