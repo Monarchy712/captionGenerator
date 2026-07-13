@@ -7,8 +7,8 @@
  */
 
 import type { CaptionStyle } from "@caption-studio/shared";
-import { BadExampleRepository, GoodExampleRepository } from "../repositories";
-import { config } from "../config";
+import { BadExampleRepository, GoodExampleRepository } from "../../repositories";
+import { config } from "../../config";
 
 export interface RetrievedExamples {
   good: Awaited<ReturnType<GoodExampleRepository["findRelevant"]>>;

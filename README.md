@@ -11,7 +11,7 @@ The frontend never builds prompts. The backend assembles rules, writing principl
 | Frontend | React, Vite, TypeScript, Tailwind, shadcn/ui, React Hook Form, TanStack Query |
 | Backend | Node.js, Express, TypeScript |
 | Database | SQLite + Prisma (Postgres-ready) |
-| AI | Anthropic Claude (abstracted provider — OpenAI-ready) |
+| AI | Groq (testing) / Anthropic Claude (production) — abstracted provider |
 
 ## Monorepo layout
 
@@ -29,9 +29,10 @@ The frontend never builds prompts. The backend assembles rules, writing principl
 # 1. Install
 npm install
 
-# 2. Configure env (optional — mock AI works out of the box)
+# 2. Configure env
 cp .env.example .env
-# Set ANTHROPIC_API_KEY and AI_PROVIDER=anthropic for live generation
+# Set GROQ_API_KEY for testing (AI_PROVIDER=groq)
+# Later: ANTHROPIC_API_KEY + AI_PROVIDER=anthropic for production
 
 # 3. Database
 cd server
@@ -79,9 +80,11 @@ Admin routes require header `x-admin-password: <password>`.
 |----------|---------|-------|
 | `PORT` | `3001` | API port |
 | `ADMIN_PASSWORD` | `caption-studio-admin` | Admin gate |
-| `AI_PROVIDER` | `mock` | `mock` \| `anthropic` |
-| `ANTHROPIC_API_KEY` | — | Required for live Claude |
-| `CLAUDE_MODEL` | `claude-sonnet-4-20250514` | Model id |
+| `AI_PROVIDER` | `groq` | `groq` \| `anthropic` \| `mock` |
+| `GROQ_API_KEY` | — | Required when using Groq |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model id |
+| `ANTHROPIC_API_KEY` | — | Required when using Claude |
+| `CLAUDE_MODEL` | `claude-sonnet-4-20250514` | Claude model id |
 | `DATABASE_URL` | `file:./dev.db` | Prisma SQLite |
 | `CORS_ORIGIN` | `http://localhost:5173` | Frontend origin |
 | `VITE_API_URL` | `http://localhost:3001` | Client API base |

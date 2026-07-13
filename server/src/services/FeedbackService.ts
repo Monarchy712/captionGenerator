@@ -1,6 +1,34 @@
-import type { FeedbackType } from "@caption-studio/shared";
+import type { FeedbackType, GeneratedCaption } from "@caption-studio/shared";
 import { CaptionRepository, FeedbackRepository } from "../repositories";
 import { AppError } from "../utils/helpers";
+
+function toCaptionDto(c: {
+  id: string;
+  transcriptId: string;
+  originalText: string;
+  editedText: string | null;
+  finalText: string;
+  speaker: string | null;
+  style: string | null;
+  version: number;
+  isUsed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): GeneratedCaption {
+  return {
+    id: c.id,
+    transcriptId: c.transcriptId,
+    originalText: c.originalText,
+    editedText: c.editedText,
+    finalText: c.finalText,
+    speaker: c.speaker,
+    style: c.style,
+    version: c.version,
+    isUsed: c.isUsed,
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+  };
+}
 
 export class FeedbackService {
   constructor(
@@ -17,21 +45,23 @@ export class FeedbackService {
     const caption = await this.captionRepo.findById(input.captionId);
     if (!caption) throw new AppError(404, "Caption not found");
 
-    let updated = caption;
+    let updated = toCaptionDto(caption);
 
     switch (input.type) {
       case "like":
       case "dislike":
         break;
       case "used":
-        updated = await this.captionRepo.markUsed(input.captionId);
+        updated = toCaptionDto(await this.captionRepo.markUsed(input.captionId));
         break;
       case "edit": {
         if (!input.editedText?.trim()) {
           throw new AppError(400, "editedText is required for edit feedback");
         }
         // Version history: never overwrite — create a new CaptionVersion.
-        updated = await this.captionRepo.applyEdit(input.captionId, input.editedText.trim());
+        updated = toCaptionDto(
+          await this.captionRepo.applyEdit(input.captionId, input.editedText.trim())
+        );
         break;
       }
       default:
@@ -52,19 +82,7 @@ export class FeedbackService {
         note: feedback.note,
         createdAt: feedback.createdAt.toISOString(),
       },
-      caption: {
-        id: updated.id,
-        transcriptId: updated.transcriptId,
-        originalText: updated.originalText,
-        editedText: updated.editedText,
-        finalText: updated.finalText,
-        speaker: updated.speaker,
-        style: updated.style,
-        version: updated.version,
-        isUsed: updated.isUsed,
-        createdAt: updated.createdAt.toISOString(),
-        updatedAt: updated.updatedAt.toISOString(),
-      },
+      caption: updated,
     };
   }
 }

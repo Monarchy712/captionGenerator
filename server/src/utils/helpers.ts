@@ -9,6 +9,11 @@ export class AppError extends Error {
   }
 }
 
+/** Normalize Express route params (string | string[]) to a single string. */
+export function paramId(value: string | string[]): string {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export function parseJsonArray(value: string): string[] {
   try {
     const parsed = JSON.parse(value);

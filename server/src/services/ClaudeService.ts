@@ -1,8 +1,8 @@
 import type { CaptionStyle } from "@caption-studio/shared";
-import { createAIProvider, type AIProvider } from "../../providers";
-import { CaptionRepository, TranscriptRepository } from "../../repositories";
-import { PromptBuilder } from "../prompt/PromptBuilder";
-import { AppError } from "../../utils/helpers";
+import { createAIProvider, type AIProvider } from "../providers";
+import { CaptionRepository, TranscriptRepository } from "../repositories";
+import { PromptBuilder } from "./prompt/PromptBuilder";
+import { AppError } from "../utils/helpers";
 
 export class ClaudeService {
   constructor(

@@ -21,7 +21,7 @@ import {
   rulesReplaceSchema,
   speakerSchema,
 } from "../utils/validators";
-import { AppError } from "../utils/helpers";
+import { AppError, paramId } from "../utils/helpers";
 
 const claudeService = new ClaudeService();
 const feedbackService = new FeedbackService();
@@ -85,18 +85,21 @@ export class ExamplesController {
 
   static async createGood(req: Request, res: Response) {
     const body = parseBody(goodExampleSchema, req.body);
-    const example = await goodExampleRepo.create(body);
+    const example = await goodExampleRepo.create({
+      ...body,
+      style: body.style ?? undefined,
+    });
     res.status(201).json(example);
   }
 
   static async updateGood(req: Request, res: Response) {
     const body = parseBody(goodExampleSchema.partial(), req.body);
-    const example = await goodExampleRepo.update(req.params.id, body);
+    const example = await goodExampleRepo.update(paramId(req.params.id), body);
     res.json(example);
   }
 
   static async deleteGood(req: Request, res: Response) {
-    await goodExampleRepo.delete(req.params.id);
+    await goodExampleRepo.delete(paramId(req.params.id));
     res.status(204).send();
   }
 
@@ -113,12 +116,12 @@ export class ExamplesController {
 
   static async updateBad(req: Request, res: Response) {
     const body = parseBody(badExampleSchema.partial(), req.body);
-    const example = await badExampleRepo.update(req.params.id, body);
+    const example = await badExampleRepo.update(paramId(req.params.id), body);
     res.json(example);
   }
 
   static async deleteBad(req: Request, res: Response) {
-    await badExampleRepo.delete(req.params.id);
+    await badExampleRepo.delete(paramId(req.params.id));
     res.status(204).send();
   }
 }
@@ -146,12 +149,12 @@ export class RulesController {
   }
 
   static async update(req: Request, res: Response) {
-    const rule = await ruleRepo.update(req.params.id, req.body);
+    const rule = await ruleRepo.update(paramId(req.params.id), req.body);
     res.json(rule);
   }
 
   static async delete(req: Request, res: Response) {
-    await ruleRepo.delete(req.params.id);
+    await ruleRepo.delete(paramId(req.params.id));
     res.status(204).send();
   }
 }
@@ -177,12 +180,12 @@ export class PrinciplesController {
 
   static async update(req: Request, res: Response) {
     const body = parseBody(principleSchema.partial(), req.body);
-    const principle = await principleRepo.update(req.params.id, body);
+    const principle = await principleRepo.update(paramId(req.params.id), body);
     res.json(principle);
   }
 
   static async delete(req: Request, res: Response) {
-    await principleRepo.delete(req.params.id);
+    await principleRepo.delete(paramId(req.params.id));
     res.status(204).send();
   }
 }
@@ -195,18 +198,21 @@ export class SpeakersController {
 
   static async create(req: Request, res: Response) {
     const body = parseBody(speakerSchema, req.body);
-    const speaker = await speakerRepo.create(body);
+    const speaker = await speakerRepo.create({
+      ...body,
+      notes: body.notes ?? undefined,
+    });
     res.status(201).json(speaker);
   }
 
   static async update(req: Request, res: Response) {
     const body = parseBody(speakerSchema.partial(), req.body);
-    const speaker = await speakerRepo.update(req.params.id, body);
+    const speaker = await speakerRepo.update(paramId(req.params.id), body);
     res.json(speaker);
   }
 
   static async delete(req: Request, res: Response) {
-    await speakerRepo.delete(req.params.id);
+    await speakerRepo.delete(paramId(req.params.id));
     res.status(204).send();
   }
 }
