@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("editor") // admin | editor
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Rule {
+  id        String   @id @default(cuid())
+  content   String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WritingPrinciple {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PromptTemplate {
+  id        String                  @id @default(cuid())
+  name      String                  @unique
+  content   String
+  version   Int                     @default(1)
+  isActive  Boolean                 @default(true)
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+  versions  PromptTemplateVersion[]
+}
+
+model PromptTemplateVersion {
+  id         String         @id @default(cuid())
+  templateId String
+  content    String
+  version    Int
+  createdAt  DateTime       @default(now())
+  template   PromptTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
+
+model GoodExample {
+  id         String   @id @default(cuid())
+  transcript String
+  caption    String
+  category   String   @default("general")
+  tags       String   @default("[]") // JSON array stored as string for SQLite
+  speaker    String
+  style      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model BadExample {
+  id        String   @id @default(cuid())
+  caption   String
+  reason    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SpeakerProfile {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  tone            String
+  founderStyle    String   @default("")
+  technicalDepth  String
+  audience        String
+  writingStyle    String
+  vocabulary      String
+  notes           String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Transcript {
+  id        String              @id @default(cuid())
+  content   String
+  speaker   String?
+  style     String?
+  createdAt DateTime            @default(now())
+  captions  GeneratedCaption[]
+}
+
+model GeneratedCaption {
+  id           String           @id @default(cuid())
+  transcriptId String
+  originalText String
+  editedText   String?
+  finalText    String
+  speaker      String?
+  style        String?
+  version      Int              @default(1)
+  isUsed       Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  transcript   Transcript       @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  feedback     Feedback[]
+  versions     CaptionVersion[]
+
+  @@index([transcriptId])
+}
+
+model CaptionVersion {
+  id        String           @id @default(cuid())
+  captionId String
+  text      String
+  version   Int
+  source    String // ai | edit
+  createdAt DateTime         @default(now())
+  caption   GeneratedCaption @relation(fields: [captionId], references: [id], onDelete: Cascade)
+
+  @@index([captionId])
+}
+
+model Feedback {
+  id        String           @id @default(cuid())
+  captionId String
+  type      String // like | dislike | edit | used
+  note      String?
+  createdAt DateTime         @default(now())
+  caption   GeneratedCaption @relation(fields: [captionId], references: [id], onDelete: Cascade)
+
+  @@index([captionId])
+}
