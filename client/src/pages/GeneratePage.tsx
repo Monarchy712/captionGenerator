@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Eye, Loader2, Wand2 } from "lucide-react";
+import { ChevronDown, Eye, Loader2, RefreshCw, Wand2 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { CAPTION_STYLES, type CaptionStyle, type GeneratedCaption } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CaptionCard } from "@/components/captions/CaptionCard";
-import { useGenerate, usePreviewPrompt } from "@/hooks/useCaptionApi";
+import { useGenerate, useIterate, usePreviewPrompt } from "@/hooks/useCaptionApi";
 import { ApiClientError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -22,12 +22,14 @@ interface FormValues {
 
 export function GeneratePage() {
   const generate = useGenerate();
+  const iterate = useIterate();
   const preview = usePreviewPrompt();
 
   const [captions, setCaptions] = useState<GeneratedCaption[]>([]);
   const [promptPreview, setPromptPreview] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [iterationNotes, setIterationNotes] = useState("");
 
   const { register, handleSubmit, control, watch, formState } = useForm<FormValues>({
     defaultValues: {
@@ -38,6 +40,7 @@ export function GeneratePage() {
   });
 
   const values = watch();
+  const busy = generate.isPending || iterate.isPending;
 
   async function onGenerate(data: FormValues) {
     setError(null);
@@ -49,9 +52,32 @@ export function GeneratePage() {
         count: 5,
       });
       setCaptions(result.captions);
+      setIterationNotes("");
       if (result.promptPreview) setPromptPreview(result.promptPreview);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Generation failed");
+    }
+  }
+
+  async function onIterate() {
+    setError(null);
+    if (!iterationNotes.trim()) {
+      setError("Type an iteration note first — e.g. make hooks shorter, add more tension");
+      return;
+    }
+    try {
+      const result = await iterate.mutateAsync({
+        transcript: values.transcript,
+        speaker: values.speaker.trim(),
+        style: values.style,
+        currentCaptions: captions.map((c) => c.finalText),
+        iterationNotes: iterationNotes.trim(),
+        count: captions.length || 5,
+      });
+      setCaptions(result.captions);
+      if (result.promptPreview) setPromptPreview(result.promptPreview);
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Iteration failed");
     }
   }
 
@@ -162,7 +188,7 @@ export function GeneratePage() {
         )}
 
         <div className="flex flex-wrap items-center gap-3 animate-fade-up" style={{ animationDelay: "120ms" }}>
-          <Button type="submit" size="lg" disabled={generate.isPending || !canSubmit}>
+          <Button type="submit" size="lg" disabled={busy || !canSubmit}>
             {generate.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -229,6 +255,41 @@ export function GeneratePage() {
             </Label>
             <h2 className="font-display mt-1 text-2xl font-semibold">Pick, edit, and train</h2>
           </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Iterate</CardTitle>
+              <CardDescription>
+                Tell the model what to change. It keeps the current captions as context and rewrites them.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                value={iterationNotes}
+                onChange={(e) => setIterationNotes(e.target.value)}
+                rows={3}
+                placeholder='e.g. "Make hooks sharper and under 12 words" · "Lead with the $500B stat" · "Less hype, more tension"'
+              />
+              <Button
+                type="button"
+                onClick={onIterate}
+                disabled={busy || !iterationNotes.trim() || !canSubmit}
+              >
+                {iterate.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Iterating…
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                    Iterate captions
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
           <div className="grid gap-4 md:grid-cols-2">
             {captions.map((caption, i) => (
               <CaptionCard key={caption.id} caption={caption} index={i} onUpdate={updateCaption} />
