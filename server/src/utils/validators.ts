@@ -44,6 +44,7 @@ export const badExampleSchema = z.object({
 });
 
 export const rulesReplaceSchema = z.object({
+  outputKind: z.enum(OUTPUT_KINDS as [string, ...string[]]),
   rules: z.array(
     z.object({
       content: z.string().min(1),

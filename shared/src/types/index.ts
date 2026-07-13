@@ -33,6 +33,7 @@ export type FeedbackType = "like" | "dislike" | "edit" | "used";
 export interface Rule {
   id: string;
   content: string;
+  outputKind: OutputKind;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
+import type { OutputKind } from "@caption-studio/shared";
+import { OUTPUT_KIND_LABELS, OUTPUT_KINDS } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useReplaceRules, useRules } from "@/hooks/useCaptionApi";
 
-export function RulesPanel() {
-  const { data, isLoading, error } = useRules();
+function RuleKindEditor({ kind }: { kind: OutputKind }) {
+  const { data, isLoading, error } = useRules(kind);
   const replace = useReplaceRules();
   const [lines, setLines] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
@@ -16,28 +18,36 @@ export function RulesPanel() {
   }, [data]);
 
   async function save() {
-    await replace.mutateAsync(
-      lines.filter((l) => l.trim()).map((content, i) => ({ content: content.trim(), sortOrder: i, isActive: true }))
-    );
+    await replace.mutateAsync({
+      outputKind: kind,
+      rules: lines
+        .filter((l) => l.trim())
+        .map((content, i) => ({ content: content.trim(), sortOrder: i, isActive: true })),
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
 
+  const label = OUTPUT_KIND_LABELS[kind];
+
   if (isLoading) return <Loading />;
-  if (error) return <ErrorBox message="Failed to load rules" />;
+  if (error) return <ErrorBox message={`Failed to load ${label} rules`} />;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Rules</CardTitle>
+        <CardTitle>{label} rules</CardTitle>
         <CardDescription>
-          Hard constraints injected into every generation prompt. Keep them short and absolute.
+          Hard constraints injected only when generating {label.toLowerCase()}. Edit these
+          independently of the other generators.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {lines.map((line, i) => (
           <div key={i} className="flex gap-2">
-            <span className="mt-2.5 w-6 shrink-0 font-mono text-xs text-muted-foreground">{i + 1}.</span>
+            <span className="mt-2.5 w-6 shrink-0 font-mono text-xs text-muted-foreground">
+              {i + 1}.
+            </span>
             <Input
               value={line}
               onChange={(e) => {
@@ -47,6 +57,7 @@ export function RulesPanel() {
               }}
             />
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               onClick={() => setLines(lines.filter((_, idx) => idx !== i))}
@@ -56,17 +67,31 @@ export function RulesPanel() {
           </div>
         ))}
         <div className="flex flex-wrap gap-2 pt-2">
-          <Button variant="outline" size="sm" onClick={() => setLines([...lines, ""])}>
+          <Button type="button" variant="outline" size="sm" onClick={() => setLines([...lines, ""])}>
             <Plus className="h-3.5 w-3.5" />
             Add rule
           </Button>
-          <Button size="sm" onClick={save} disabled={replace.isPending}>
+          <Button type="button" size="sm" onClick={save} disabled={replace.isPending}>
             {replace.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-            {saved ? "Saved" : "Save rules"}
+            {saved ? "Saved" : `Save ${label} rules`}
           </Button>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export function RulesPanel() {
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Each generator has its own rule set. X Captions, Shorts Title, and Shorts Caption do not
+        share rules — edit them separately below.
+      </p>
+      {OUTPUT_KINDS.map((kind) => (
+        <RuleKindEditor key={kind} kind={kind} />
+      ))}
+    </div>
   );
 }
 

@@ -6,6 +6,7 @@ import type {
   GenerateResponse,
   IterateRequest,
   GoodExample,
+  OutputKind,
   PromptTemplate,
   Rule,
   WritingPrinciple,
@@ -40,19 +41,28 @@ export function useFeedback() {
   });
 }
 
-export function useRules() {
+export function useRules(outputKind?: OutputKind) {
   return useQuery({
-    queryKey: ["rules"],
-    queryFn: () => api.get<Rule[]>("/rules", true),
+    queryKey: ["rules", outputKind ?? "all"],
+    queryFn: () =>
+      api.get<Rule[]>(
+        outputKind ? `/rules?outputKind=${encodeURIComponent(outputKind)}` : "/rules",
+        true
+      ),
   });
 }
 
 export function useReplaceRules() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (rules: { content: string; sortOrder: number; isActive?: boolean }[]) =>
-      api.put<Rule[]>("/rules", { rules }, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["rules"] }),
+    mutationFn: (body: {
+      outputKind: OutputKind;
+      rules: { content: string; sortOrder: number; isActive?: boolean }[];
+    }) => api.put<Rule[]>("/rules", body, true),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["rules", vars.outputKind] });
+      qc.invalidateQueries({ queryKey: ["rules", "all"] });
+    },
   });
 }
 

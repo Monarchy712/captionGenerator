@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ChevronDown, Eye, Loader2 } from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
 import { CAPTION_STYLES, type CaptionStyle } from "@caption-studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,37 +12,27 @@ import { usePreviewPrompt } from "@/hooks/useCaptionApi";
 import { ApiClientError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-interface FormValues {
-  transcript: string;
-  speaker: string;
-  style: CaptionStyle;
-}
-
 export function GeneratePage() {
   const preview = usePreviewPrompt();
 
+  const [transcript, setTranscript] = useState("");
+  const [speaker, setSpeaker] = useState("");
+  const [style, setStyle] = useState<CaptionStyle>("Viral");
   const [promptPreview, setPromptPreview] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { register, control, watch, formState } = useForm<FormValues>({
-    defaultValues: {
-      transcript: "",
-      speaker: "",
-      style: "Viral",
-    },
-  });
-
-  const values = watch();
-  const canSubmit = !!values.transcript?.trim() && !!values.speaker?.trim();
-
   async function onPreview() {
     setError(null);
+    if (!transcript.trim() || !speaker.trim()) {
+      setError("Paste a transcript and enter a speaker name first.");
+      return;
+    }
     try {
       const result = await preview.mutateAsync({
-        transcript: values.transcript,
-        speaker: values.speaker.trim(),
-        style: values.style,
+        transcript,
+        speaker: speaker.trim(),
+        style,
         count: 5,
         previewOnly: true,
         outputKind: "x_captions",
@@ -57,7 +46,7 @@ export function GeneratePage() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-2 animate-fade-up">
+      <div className="space-y-2">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary/80">Generate</p>
         <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
           Caption Studio
@@ -68,25 +57,23 @@ export function GeneratePage() {
       </div>
 
       <div className="space-y-6">
-        <Card className="animate-fade-up" style={{ animationDelay: "40ms" }}>
+        <Card>
           <CardHeader>
             <CardTitle>Transcript</CardTitle>
             <CardDescription>Shared across all three generators below.</CardDescription>
           </CardHeader>
           <CardContent>
             <Textarea
-              {...register("transcript", { required: true })}
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
               rows={10}
               placeholder="Paste transcript…"
               className="min-h-[220px]"
             />
-            {formState.errors.transcript && (
-              <p className="mt-2 text-sm text-destructive">Transcript is required</p>
-            )}
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2 animate-fade-up" style={{ animationDelay: "80ms" }}>
+        <div className="grid gap-4 sm:grid-cols-2">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Speaker / guest</CardTitle>
@@ -94,13 +81,11 @@ export function GeneratePage() {
             </CardHeader>
             <CardContent>
               <Input
-                {...register("speaker", { required: true })}
+                value={speaker}
+                onChange={(e) => setSpeaker(e.target.value)}
                 placeholder="e.g. Vitalik, Anatoly, Jane Doe"
                 autoComplete="off"
               />
-              {formState.errors.speaker && (
-                <p className="mt-2 text-sm text-destructive">Speaker name is required</p>
-              )}
             </CardContent>
           </Card>
 
@@ -109,24 +94,18 @@ export function GeneratePage() {
               <CardTitle className="text-base">Style</CardTitle>
             </CardHeader>
             <CardContent>
-              <Controller
-                name="style"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select style" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CAPTION_STYLES.map((style) => (
-                        <SelectItem key={style} value={style}>
-                          {style}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <Select value={style} onValueChange={(v) => setStyle(v as CaptionStyle)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select style" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CAPTION_STYLES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
         </div>
@@ -142,7 +121,7 @@ export function GeneratePage() {
             type="button"
             variant="outline"
             size="lg"
-            disabled={preview.isPending || !canSubmit}
+            disabled={preview.isPending}
             onClick={onPreview}
           >
             {preview.isPending ? (
@@ -184,29 +163,26 @@ export function GeneratePage() {
 
       <OutputSection
         kind="x_captions"
-        transcript={values.transcript}
-        speaker={values.speaker}
-        style={values.style}
-        canSubmit={canSubmit}
+        transcript={transcript}
+        speaker={speaker}
+        style={style}
         description="Full X / social captions using rules, principles, and good/bad examples."
       />
 
       <OutputSection
         kind="shorts_title"
-        transcript={values.transcript}
-        speaker={values.speaker}
-        style={values.style}
-        canSubmit={canSubmit}
-        description="YouTube Shorts titles. Same template, principles, and rules — no examples, no word-count limits."
+        transcript={transcript}
+        speaker={speaker}
+        style={style}
+        description="YouTube Shorts titles. Own rule set in Admin — no good/bad examples."
       />
 
       <OutputSection
         kind="shorts_caption"
-        transcript={values.transcript}
-        speaker={values.speaker}
-        style={values.style}
-        canSubmit={canSubmit}
-        description="YouTube Shorts captions. Same template, principles, and rules — no examples, no word-count limits."
+        transcript={transcript}
+        speaker={speaker}
+        style={style}
+        description="YouTube Shorts captions. Own rule set in Admin — no good/bad examples."
       />
     </div>
   );

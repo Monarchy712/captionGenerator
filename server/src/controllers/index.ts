@@ -143,21 +143,27 @@ export class ExamplesController {
 }
 
 export class RulesController {
-  static async list(_req: Request, res: Response) {
-    const rules = await ruleRepo.findAll();
+  static async list(req: Request, res: Response) {
+    const kind = typeof req.query.outputKind === "string" ? req.query.outputKind : undefined;
+    const rules = await ruleRepo.findAll(false, kind);
     res.json(rules);
   }
 
   static async replace(req: Request, res: Response) {
     const body = parseBody(rulesReplaceSchema, req.body);
-    const rules = await ruleRepo.replaceAll(body.rules);
+    const rules = await ruleRepo.replaceAll(body.outputKind, body.rules);
     res.json(rules);
   }
 
   static async create(req: Request, res: Response) {
     const content = zString(req.body.content);
+    const outputKind =
+      typeof req.body.outputKind === "string" && req.body.outputKind
+        ? req.body.outputKind
+        : "x_captions";
     const rule = await ruleRepo.create({
       content,
+      outputKind,
       sortOrder: typeof req.body.sortOrder === "number" ? req.body.sortOrder : 0,
       isActive: req.body.isActive ?? true,
     });

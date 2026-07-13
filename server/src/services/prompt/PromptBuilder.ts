@@ -33,15 +33,6 @@ export interface BuiltPrompt {
   parts: AssembledPromptParts;
 }
 
-/** Word-limit rules (e.g. 10–15 words, max 25 words) — skipped for Shorts outputs. */
-export function isWordLimitRule(content: string): boolean {
-  return (
-    /\b\d+\s*[–\-]\s*\d+\s*words?\b/i.test(content) ||
-    /\b(?:maximum|max|not more than|at most|up to)\s+\d+\s*words?\b/i.test(content) ||
-    /\b\d+\s*words?\s*max(?:imum)?\b/i.test(content)
-  );
-}
-
 function formatSpeakerContext(speakerName: string): string {
   const name = speakerName.trim() || "the speaker";
   return [
@@ -80,15 +71,13 @@ function modeInstructions(kind: OutputKind, count: number): string {
 Produce exactly ${count} YouTube Shorts titles.
 Each title is a single line — punchy, scroll-stopping, specific.
 Do NOT use the X-caption 3-part format (no attribution line, no quote stack).
-Do NOT invent word-count limits that aren't in the rules above.
 Separate each title with <<<CAPTION>>> on its own line.`;
     case "shorts_caption":
       return `
 ## OUTPUT MODE — SHORTS CAPTION
 Produce exactly ${count} YouTube Shorts captions/descriptions for the video.
 These are Shorts captions — not the full X / Twitter caption stack.
-Keep voice sharp and specific; still obey active rules.
-Do NOT invent word-count limits that aren't in the rules above.
+Keep voice sharp and specific; still obey active rules for this mode.
 Separate each caption with <<<CAPTION>>> on its own line.`;
     case "x_captions":
     default:
@@ -119,8 +108,8 @@ export class PromptBuilder {
     if (!transcript) throw new AppError(400, "Transcript is required");
     if (!speaker) throw new AppError(400, "Speaker name is required");
 
-    const [allRules, principles, template, examples] = await Promise.all([
-      this.rulesRepo.findAll(true),
+    const [rules, principles, template, examples] = await Promise.all([
+      this.rulesRepo.findAll(true, outputKind),
       this.principlesRepo.findAll(true),
       this.templatesRepo.findActive(),
       isShorts
@@ -134,8 +123,6 @@ export class PromptBuilder {
     if (!template) {
       throw new AppError(500, "No active prompt template configured");
     }
-
-    const rules = isShorts ? allRules.filter((r) => !isWordLimitRule(r.content)) : allRules;
 
     const rulesText =
       rules.length > 0

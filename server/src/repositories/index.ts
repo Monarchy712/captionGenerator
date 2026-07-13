@@ -2,18 +2,36 @@ import prisma from "../database/prisma";
 import { parseJsonArray, toJsonArray } from "../utils/helpers";
 
 export class RuleRepository {
-  async findAll(activeOnly = false) {
+  async findAll(activeOnly = false, outputKind?: string) {
     return prisma.rule.findMany({
-      where: activeOnly ? { isActive: true } : undefined,
-      orderBy: { sortOrder: "asc" },
+      where: {
+        ...(activeOnly ? { isActive: true } : {}),
+        ...(outputKind ? { outputKind } : {}),
+      },
+      orderBy: [{ outputKind: "asc" }, { sortOrder: "asc" }],
     });
   }
 
-  async create(data: { content: string; sortOrder?: number; isActive?: boolean }) {
-    return prisma.rule.create({ data });
+  async create(data: {
+    content: string;
+    outputKind?: string;
+    sortOrder?: number;
+    isActive?: boolean;
+  }) {
+    return prisma.rule.create({
+      data: {
+        content: data.content,
+        outputKind: data.outputKind ?? "x_captions",
+        sortOrder: data.sortOrder ?? 0,
+        isActive: data.isActive ?? true,
+      },
+    });
   }
 
-  async update(id: string, data: Partial<{ content: string; sortOrder: number; isActive: boolean }>) {
+  async update(
+    id: string,
+    data: Partial<{ content: string; outputKind: string; sortOrder: number; isActive: boolean }>
+  ) {
     return prisma.rule.update({ where: { id }, data });
   }
 
@@ -21,18 +39,25 @@ export class RuleRepository {
     return prisma.rule.delete({ where: { id } });
   }
 
-  async replaceAll(rules: { content: string; sortOrder: number; isActive?: boolean }[]) {
+  async replaceAll(
+    outputKind: string,
+    rules: { content: string; sortOrder: number; isActive?: boolean }[]
+  ) {
     return prisma.$transaction(async (tx) => {
-      await tx.rule.deleteMany();
+      await tx.rule.deleteMany({ where: { outputKind } });
       if (rules.length === 0) return [];
       await tx.rule.createMany({
         data: rules.map((r) => ({
           content: r.content,
           sortOrder: r.sortOrder,
           isActive: r.isActive ?? true,
+          outputKind,
         })),
       });
-      return tx.rule.findMany({ orderBy: { sortOrder: "asc" } });
+      return tx.rule.findMany({
+        where: { outputKind },
+        orderBy: { sortOrder: "asc" },
+      });
     });
   }
 }

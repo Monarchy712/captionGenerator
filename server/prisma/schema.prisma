@@ -17,12 +17,15 @@ model User {
 }
 
 model Rule {
-  id        String   @id @default(cuid())
-  content   String
-  isActive  Boolean  @default(true)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  content    String
+  outputKind String   @default("x_captions") // x_captions | shorts_title | shorts_caption
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([outputKind])
 }
 
 model WritingPrinciple {

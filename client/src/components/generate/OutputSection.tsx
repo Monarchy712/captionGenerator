@@ -14,7 +14,6 @@ interface OutputSectionProps {
   transcript: string;
   speaker: string;
   style: CaptionStyle;
-  canSubmit: boolean;
   description: string;
 }
 
@@ -23,7 +22,6 @@ export function OutputSection({
   transcript,
   speaker,
   style,
-  canSubmit,
   description,
 }: OutputSectionProps) {
   const generate = useGenerate();
@@ -37,6 +35,10 @@ export function OutputSection({
 
   async function onGenerate() {
     setError(null);
+    if (!transcript.trim() || !speaker.trim()) {
+      setError("Paste a transcript and enter a speaker name first.");
+      return;
+    }
     try {
       const result = await generate.mutateAsync({
         transcript,
@@ -54,6 +56,10 @@ export function OutputSection({
 
   async function onIterate() {
     setError(null);
+    if (!transcript.trim() || !speaker.trim()) {
+      setError("Paste a transcript and enter a speaker name first.");
+      return;
+    }
     if (!iterationNotes.trim()) {
       setError("Type an iteration note first");
       return;
@@ -88,7 +94,7 @@ export function OutputSection({
           <h2 className="font-display mt-1 text-2xl font-semibold">{label}</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
         </div>
-        <Button type="button" onClick={onGenerate} disabled={busy || !canSubmit}>
+        <Button type="button" onClick={onGenerate} disabled={busy}>
           {generate.isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -125,11 +131,7 @@ export function OutputSection({
                 rows={3}
                 placeholder='e.g. "Make them sharper" · "Lead with the number" · "Less hype"'
               />
-              <Button
-                type="button"
-                onClick={onIterate}
-                disabled={busy || !iterationNotes.trim() || !canSubmit}
-              >
+              <Button type="button" onClick={onIterate} disabled={busy}>
                 {iterate.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
