@@ -13,7 +13,7 @@ function isWordLimitRule(content: string): boolean {
  * have rules / principles / templates (examples stay empty until admin fills).
  */
 export async function ensurePerKindRules(): Promise<void> {
-  for (const kind of ["shorts_title", "shorts_caption"] as const) {
+  for (const kind of ["shorts_title", "shorts_caption", "shorts_gist"] as const) {
     // Rules
     const ruleCount = await prisma.rule.count({ where: { outputKind: kind } });
     if (ruleCount === 0) {

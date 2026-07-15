@@ -78,6 +78,13 @@ Produce exactly ${count} YouTube Shorts captions/descriptions for the video.
 These are Shorts captions — not the full X / Twitter caption stack.
 Keep voice sharp and specific; still obey active rules for this mode.
 Separate each caption with <<<CAPTION>>> on its own line.`;
+    case "shorts_gist":
+      return `
+## OUTPUT MODE — SHORTS GIST
+Produce exactly ${count} ultra-short gist lines for YouTube Shorts.
+Each gist is a single punchy sentence that captures the core insight or hook of the clip.
+Do NOT use the X-caption 3-part format (no attribution line, no quote stack).
+Separate each gist with <<<CAPTION>>> on its own line.`;
     case "x_captions":
     default:
       return `

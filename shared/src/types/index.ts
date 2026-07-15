@@ -18,14 +18,15 @@ export const CAPTION_STYLES: CaptionStyle[] = [
 ];
 
 /** Which generator section produced this output. */
-export type OutputKind = "x_captions" | "shorts_title" | "shorts_caption";
+export type OutputKind = "x_captions" | "shorts_title" | "shorts_caption" | "shorts_gist";
 
-export const OUTPUT_KINDS: OutputKind[] = ["x_captions", "shorts_title", "shorts_caption"];
+export const OUTPUT_KINDS: OutputKind[] = ["x_captions", "shorts_title", "shorts_caption", "shorts_gist"];
 
 export const OUTPUT_KIND_LABELS: Record<OutputKind, string> = {
   x_captions: "X Captions",
   shorts_title: "Shorts Title",
   shorts_caption: "Shorts Caption",
+  shorts_gist: "Shorts Gist",
 };
 
 export type FeedbackType = "like" | "dislike" | "edit" | "used";

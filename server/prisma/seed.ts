@@ -98,7 +98,7 @@ async function main() {
   }
 
   // Bootstrap Shorts rule sets from X rules (minus word-limit lines) when empty.
-  for (const kind of ["shorts_title", "shorts_caption"] as const) {
+  for (const kind of ["shorts_title", "shorts_caption", "shorts_gist"] as const) {
     const count = await prisma.rule.count({ where: { outputKind: kind } });
     if (count > 0) continue;
     const source = await prisma.rule.findMany({
@@ -203,7 +203,7 @@ async function main() {
   }
 
   // Bootstrap Shorts principles + templates (examples intentionally empty).
-  for (const kind of ["shorts_title", "shorts_caption"] as const) {
+  for (const kind of ["shorts_title", "shorts_caption", "shorts_gist"] as const) {
     const pCount = await prisma.writingPrinciple.count({ where: { outputKind: kind } });
     if (pCount === 0) {
       const source = await prisma.writingPrinciple.findMany({
