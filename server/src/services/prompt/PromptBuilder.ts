@@ -66,24 +66,47 @@ function modeInstructions(kind: OutputKind, count: number): string {
   switch (kind) {
     case "shorts_title":
       return `
+
+## OVERRIDE — DISREGARD ANY CONFLICTING INSTRUCTIONS ABOVE
+The GENERATION INSTRUCTIONS section above (if present) was written for X Captions.
+You are producing SHORTS TITLE output. Follow ONLY the instructions below.
+
 ## OUTPUT MODE — SHORTS TITLE
 Produce exactly ${count} YouTube Shorts titles.
 Each title is a single line — punchy, scroll-stopping, specific.
-Do NOT use the X-caption 3-part format (no attribution line, no quote stack).
-Separate each title with <<<CAPTION>>> on its own line.`;
+Do NOT produce multi-line captions. Do NOT add attribution lines or quote stacks.
+Do NOT follow the "Example output shape" section above — that is for X Captions only.
+Separate each title with <<<CAPTION>>> on its own line.
+No JSON. No markdown. No commentary.`;
     case "shorts_caption":
       return `
+
+## OVERRIDE — DISREGARD ANY CONFLICTING INSTRUCTIONS ABOVE
+The GENERATION INSTRUCTIONS section above (if present) was written for X Captions.
+You are producing SHORTS CAPTION output. Follow ONLY the instructions below.
+
 ## OUTPUT MODE — SHORTS CAPTION
 Produce exactly ${count} YouTube Shorts captions/descriptions for the video.
 These are Shorts captions — not the full X / Twitter caption stack.
 Keep voice sharp and specific; still obey active rules for this mode.
-Separate each caption with <<<CAPTION>>> on its own line.`;
+Do NOT produce multi-line hook+attribution+quotes blocks. Each output is a short standalone caption.
+Separate each caption with <<<CAPTION>>> on its own line.
+No JSON. No markdown. No commentary.`;
     case "shorts_gist":
       return `
+
+## OVERRIDE — DISREGARD ANY CONFLICTING INSTRUCTIONS ABOVE
+The GENERATION INSTRUCTIONS section above (if present) was written for X Captions.
+You are producing SHORTS GIST output. Follow ONLY the instructions below.
+
 ## OUTPUT MODE — SHORTS GIST
-Produce exactly ${count} gist lines. Each is ONE sentence (max ~25 words) capturing the core specific insight.
-Do NOT use the X-caption multi-line format. No attribution line. No quote stack.
-Separate each gist with <<<CAPTION>>> on its own line.`;
+Produce exactly ${count} gist lines.
+Each gist is exactly ONE sentence — max ~25 words — capturing the core specific insight from the transcript.
+Do NOT produce multi-line captions. Do NOT add an attribution line. Do NOT add a quote stack.
+Do NOT follow the "Example output shape" section above — that is for X Captions only.
+Each gist stands alone as a single punchy sentence.
+Separate each gist with <<<CAPTION>>> on its own line.
+No JSON. No markdown. No commentary.`;
     case "x_captions":
     default:
       return `
