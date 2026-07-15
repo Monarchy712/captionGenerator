@@ -202,8 +202,8 @@ async function main() {
     });
   }
 
-  // Bootstrap Shorts principles + templates (examples intentionally empty).
-  for (const kind of ["shorts_title", "shorts_caption", "shorts_gist"] as const) {
+  // Bootstrap Shorts Title / Shorts Caption — copy principles + template from X.
+  for (const kind of ["shorts_title", "shorts_caption"] as const) {
     const pCount = await prisma.writingPrinciple.count({ where: { outputKind: kind } });
     if (pCount === 0) {
       const source = await prisma.writingPrinciple.findMany({
@@ -237,6 +237,134 @@ async function main() {
         data: { templateId: created.id, content: template.content, version: 1 },
       });
     }
+  }
+
+  // --- SHORTS GIST: dedicated rules, principles, template, examples ---
+  const GIST_RULES = [
+    "Output exactly ONE sentence per gist — never two sentences, never a fragment.",
+    "Maximum 25 words.",
+    "Must contain the core specific insight, number, or claim from the transcript.",
+    "Name the speaker when attribution adds credibility.",
+    "Never use vague teasers like 'shares thoughts on' or 'explains why this matters'.",
+    "Never use engagement bait or hype language.",
+    "Prefer tension, contradiction, or a surprising fact over neutral summary.",
+    "No trailing period — gist lines do not end with a full stop.",
+  ];
+
+  const gistRuleCount = await prisma.rule.count({ where: { outputKind: "shorts_gist" } });
+  if (gistRuleCount === 0) {
+    await prisma.rule.createMany({
+      data: GIST_RULES.map((content, i) => ({
+        content,
+        sortOrder: i,
+        isActive: true,
+        outputKind: "shorts_gist",
+      })),
+    });
+  }
+
+  const GIST_PRINCIPLES = [
+    {
+      title: "One Sentence, One Insight",
+      content:
+        "Distill the entire transcript into a single sentence that a reader could repeat from memory. If you can't state the insight in one line, you haven't found it yet.",
+    },
+    {
+      title: "Specificity Is the Gist",
+      content:
+        "Include the concrete detail — the number, the name, the mechanism — that makes this clip worth watching. Vague summaries are not gists.",
+    },
+    {
+      title: "Speaker as Authority",
+      content:
+        "Name the speaker when their identity or affiliation makes the claim more credible or surprising. Omit only if the insight stands entirely on its own.",
+    },
+    {
+      title: "Scroll-Stop in 3 Seconds",
+      content:
+        "The gist IS the hook. There is no second line to save you. Front-load the most surprising or tensioned word within the first 5 words.",
+    },
+  ];
+
+  const gistPrincipleCount = await prisma.writingPrinciple.count({ where: { outputKind: "shorts_gist" } });
+  if (gistPrincipleCount === 0) {
+    await prisma.writingPrinciple.createMany({
+      data: GIST_PRINCIPLES.map((p, i) => ({
+        title: p.title,
+        content: p.content,
+        sortOrder: i,
+        isActive: true,
+        outputKind: "shorts_gist",
+      })),
+    });
+  }
+
+  const GIST_TEMPLATE = `You are an expert at writing ultra-short one-liner gists for YouTube Shorts clips from crypto podcasts.
+
+Your job: produce {{count}} gist lines for the transcript below. Each gist is exactly ONE sentence — punchy, specific, and self-contained.
+
+## RULES
+{{rules}}
+
+## WRITING PRINCIPLES
+{{principles}}
+
+## GUEST / SPEAKER
+{{speaker_profile}}
+
+## GOOD EXAMPLES
+Study these winning gists. Match their specificity and brevity — do not copy them.
+{{good_examples}}
+
+## BAD EXAMPLES (AVOID)
+Never produce gists like these:
+{{bad_examples}}
+
+## STYLE TARGET
+Write in the **{{style}}** voice.
+When the speaker's name adds weight, include **{{speaker}}** naturally.
+
+## TRANSCRIPT
+{{transcript}}
+
+## GENERATION INSTRUCTIONS
+1. Produce exactly {{count}} distinct gist lines.
+2. Each gist MUST be exactly ONE sentence — no multi-line blocks, no attribution lines, no quote stacks.
+3. Include the core specific claim, number, or tension from the transcript.
+4. Output format: separate each gist with <<<CAPTION>>> on its own line.
+   Do NOT return JSON. Do NOT wrap in markdown fences. Do NOT add commentary.`;
+
+  const gistTemplate = await prisma.promptTemplate.findUnique({ where: { outputKind: "shorts_gist" } });
+  if (!gistTemplate) {
+    const created = await prisma.promptTemplate.create({
+      data: {
+        name: "default",
+        content: GIST_TEMPLATE,
+        outputKind: "shorts_gist",
+        version: 1,
+        isActive: true,
+      },
+    });
+    await prisma.promptTemplateVersion.create({
+      data: { templateId: created.id, content: GIST_TEMPLATE, version: 1 },
+    });
+  }
+
+  // Shorts Gist good + bad examples
+  const gistGoodCount = await prisma.goodExample.count({ where: { outputKind: "shorts_gist" } });
+  if (gistGoodCount === 0) {
+    const { SHORTS_GIST_GOOD_EXAMPLES } = await import("./shorts-gist-data");
+    await prisma.goodExample.createMany({
+      data: SHORTS_GIST_GOOD_EXAMPLES.map((ex) => ({ ...ex, outputKind: "shorts_gist" })),
+    });
+  }
+
+  const gistBadCount = await prisma.badExample.count({ where: { outputKind: "shorts_gist" } });
+  if (gistBadCount === 0) {
+    const { SHORTS_GIST_BAD_EXAMPLES } = await import("./shorts-gist-data");
+    await prisma.badExample.createMany({
+      data: SHORTS_GIST_BAD_EXAMPLES.map((ex) => ({ ...ex, outputKind: "shorts_gist" })),
+    });
   }
 
   console.log("Seed complete.");

@@ -81,9 +81,8 @@ Separate each caption with <<<CAPTION>>> on its own line.`;
     case "shorts_gist":
       return `
 ## OUTPUT MODE — SHORTS GIST
-Produce exactly ${count} ultra-short gist lines for YouTube Shorts.
-Each gist is a single punchy sentence that captures the core insight or hook of the clip.
-Do NOT use the X-caption 3-part format (no attribution line, no quote stack).
+Produce exactly ${count} gist lines. Each is ONE sentence (max ~25 words) capturing the core specific insight.
+Do NOT use the X-caption multi-line format. No attribution line. No quote stack.
 Separate each gist with <<<CAPTION>>> on its own line.`;
     case "x_captions":
     default:
